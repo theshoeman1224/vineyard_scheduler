@@ -22,8 +22,8 @@ export function AdminRequests({
   initialRequests,
   rooms,
 }: {
-  initialRequests: AdminRequest[];
-  rooms: RoomInfo[];
+  readonly initialRequests: AdminRequest[];
+  readonly rooms: RoomInfo[];
 }) {
   const [requests, setRequests] = useState(initialRequests);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -194,11 +194,11 @@ function EditForm({
   onCancel,
   onError,
 }: {
-  request: AdminRequest;
-  rooms: RoomInfo[];
-  onSaved: () => Promise<void>;
-  onCancel: () => void;
-  onError: (message: string | null) => void;
+  readonly request: AdminRequest;
+  readonly rooms: RoomInfo[];
+  readonly onSaved: () => Promise<void>;
+  readonly onCancel: () => void;
+  readonly onError: (message: string | null) => void;
 }) {
   const [name, setName] = useState(request.name);
   const [email, setEmail] = useState(request.email ?? "");

@@ -11,11 +11,11 @@ export function BlueprintMap({
   selectedRoomIds,
   onSelect,
 }: {
-  rooms: RoomInfo[];
-  availability: AvailabilityMap;
-  selectedDates: string[];
-  selectedRoomIds: number[];
-  onSelect: (id: number) => void;
+  readonly rooms: RoomInfo[];
+  readonly availability: AvailabilityMap;
+  readonly selectedDates: string[];
+  readonly selectedRoomIds: number[];
+  readonly onSelect: (id: number) => void;
 }) {
   const withHotspots = rooms.filter(
     (r) =>

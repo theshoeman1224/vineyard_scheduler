@@ -17,13 +17,13 @@ export function RequestForm({
   onError,
   onClearDates,
 }: {
-  rooms: RoomInfo[];
-  selectedDates: string[];
-  roomIds: number[];
-  onRoomChange: (id: number) => void;
-  onSuccess: (cancelUrl: string) => void;
-  onError: (message: string) => void;
-  onClearDates: () => void;
+  readonly rooms: RoomInfo[];
+  readonly selectedDates: string[];
+  readonly roomIds: number[];
+  readonly onRoomChange: (id: number) => void;
+  readonly onSuccess: (cancelUrl: string) => void;
+  readonly onError: (message: string) => void;
+  readonly onClearDates: () => void;
 }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");

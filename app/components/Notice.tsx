@@ -15,8 +15,8 @@ export function Notice({
   kind,
   children,
 }: {
-  kind: keyof typeof KIND_STYLES;
-  children: React.ReactNode;
+  readonly kind: keyof typeof KIND_STYLES;
+  readonly children: React.ReactNode;
 }) {
   return (
     <p

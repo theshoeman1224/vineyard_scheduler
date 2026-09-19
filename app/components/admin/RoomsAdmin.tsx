@@ -23,7 +23,11 @@ function clampRect(r: Rect): Rect {
   return { x, y, w, h };
 }
 
-export function RoomsAdmin({ initialRooms }: { initialRooms: RoomInfo[] }) {
+export function RoomsAdmin({
+  initialRooms,
+}: {
+  readonly initialRooms: RoomInfo[];
+}) {
   const [rooms, setRooms] = useState(initialRooms);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);

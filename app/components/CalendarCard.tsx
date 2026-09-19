@@ -17,11 +17,11 @@ export function CalendarCard({
   roomIds,
   onChange,
 }: {
-  availability: AvailabilityMap;
-  rooms: RoomInfo[];
-  selectedDates: string[];
-  roomIds: number[];
-  onChange: (dates: string[]) => void;
+  readonly availability: AvailabilityMap;
+  readonly rooms: RoomInfo[];
+  readonly selectedDates: string[];
+  readonly roomIds: number[];
+  readonly onChange: (dates: string[]) => void;
 }) {
   const today = new Date();
   const [month, setMonth] = useState<Date>(today);

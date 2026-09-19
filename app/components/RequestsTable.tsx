@@ -4,7 +4,11 @@ import type { RequestPublic } from "@/app/lib/requestTypes";
 import { StatusPill } from "./StatusPill";
 import { formatDateHuman } from "@/lib/dates";
 
-export function RequestsTable({ requests }: { requests: RequestPublic[] }) {
+export function RequestsTable({
+  requests,
+}: {
+  readonly requests: RequestPublic[];
+}) {
   const visible = requests.filter((r) => r.status !== "denied");
   const sorted = [...visible].sort((a, b) =>
     (a.dates[0] ?? "").localeCompare(b.dates[0] ?? ""),

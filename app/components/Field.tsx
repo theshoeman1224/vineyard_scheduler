@@ -13,9 +13,9 @@ export function Field({
   span,
   children,
 }: {
-  label: ReactNode;
-  span?: boolean;
-  children: ReactNode;
+  readonly label: ReactNode;
+  readonly span?: boolean;
+  readonly children: ReactNode;
 }) {
   return (
     <label className={`flex flex-col gap-1 ${span ? "sm:col-span-2" : ""}`}>

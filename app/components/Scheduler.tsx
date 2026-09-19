@@ -17,9 +17,9 @@ export function Scheduler({
   initialAvailability,
   initialRequests,
 }: {
-  initialRooms: RoomInfo[];
-  initialAvailability: AvailabilityMap;
-  initialRequests: RequestPublic[];
+  readonly initialRooms: RoomInfo[];
+  readonly initialAvailability: AvailabilityMap;
+  readonly initialRequests: RequestPublic[];
 }) {
   // Rooms never change client-side; only availability and requests refresh.
   const rooms = initialRooms;

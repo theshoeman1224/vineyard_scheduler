@@ -9,7 +9,7 @@ const STATUS_STYLES: Record<string, string> = {
   denied: "bg-edge text-muted",
 };
 
-export function StatusPill({ status }: { status: string }) {
+export function StatusPill({ status }: { readonly status: string }) {
   const styles = STATUS_STYLES[status] ?? "bg-edge text-muted";
   return (
     <span
