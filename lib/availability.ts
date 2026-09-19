@@ -29,6 +29,29 @@ export type RoomDayStatus = {
 // keyed: date -> roomId -> RoomDayStatus
 export type AvailabilityMap = Record<string, Record<number, RoomDayStatus>>;
 
+// Folds bookings into the map: confirmed bookings consume a bed and
+// shrink `free`; pending bookings only bump the pending counter.
+// Bookings for dates or rooms outside the map are ignored.
+function applyBookings(
+  avail: AvailabilityMap,
+  bookings: BookingInfo[],
+): void {
+  for (const b of bookings) {
+    for (const date of b.dates) {
+      const perRoom = avail[date];
+      if (!perRoom) continue;
+      const slot = perRoom[b.roomId];
+      if (!slot) continue;
+      if (b.status === "confirmed") {
+        slot.confirmed += 1;
+        slot.free = Math.max(0, slot.beds - slot.confirmed);
+      } else {
+        slot.pending += 1;
+      }
+    }
+  }
+}
+
 export function computeAvailability(
   rooms: RoomInfo[],
   bookings: BookingInfo[],
@@ -48,20 +71,7 @@ export function computeAvailability(
     avail[date] = perRoom;
   }
 
-  for (const b of bookings) {
-    for (const date of b.dates) {
-      const perRoom = avail[date];
-      if (!perRoom) continue;
-      const slot = perRoom[b.roomId];
-      if (!slot) continue;
-      if (b.status === "confirmed") {
-        slot.confirmed += 1;
-        slot.free = Math.max(0, slot.beds - slot.confirmed);
-      } else {
-        slot.pending += 1;
-      }
-    }
-  }
+  applyBookings(avail, bookings);
 
   return avail;
 }

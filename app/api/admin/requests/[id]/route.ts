@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin";
-import { deleteRequestAsAdmin, getRequestById, updateRequestAsAdmin } from "@/lib/data";
+import {
+  deleteRequestAsAdmin,
+  getRequestById,
+  updateRequestAsAdmin,
+  type RequestWithDetails,
+} from "@/lib/data";
 import { requestEditSchema } from "@/lib/validation";
 import { sortUniqueDates } from "@/lib/dates";
-import { decisionEmail, requestEditedEmail } from "@/lib/emails";
+import { decisionEmail, requestEditedEmail, type EmailMessage } from "@/lib/emails";
 import { trySendEmail } from "@/lib/mailer";
 
 type Ctx = { params: Promise<{ id: string }> };
@@ -18,6 +23,28 @@ function parseRequestId(id: string): { id: number } | { error: NextResponse } {
     };
   }
   return { id: requestId };
+}
+
+// Notification email after an admin edit: a status change to confirmed or
+// denied sends the decision email; everything else (including an edit
+// that keeps the request pending) sends the generic edited email.
+function editNotificationEmail(
+  before: RequestWithDetails,
+  after: RequestWithDetails,
+): EmailMessage {
+  const info = {
+    requestId: after.id,
+    name: after.name,
+    email: after.email,
+    rooms: [after.roomName],
+    dates: after.dates,
+    note: after.note,
+  };
+  const statusChanged = before.status !== after.status;
+  if (statusChanged && after.status !== "pending") {
+    return decisionEmail(info, after.status);
+  }
+  return requestEditedEmail(info, after.status);
 }
 
 export async function PATCH(req: Request, ctx: Ctx) {
@@ -71,20 +98,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
   const after = await getRequestById(requestId);
   const toEmail = after?.email ?? before.email;
   if (after && toEmail) {
-    const info = {
-      requestId: after.id,
-      name: after.name,
-      email: after.email,
-      rooms: [after.roomName],
-      dates: after.dates,
-      note: after.note,
-    };
-    const statusChanged = before.status !== after.status;
-    const msg =
-      statusChanged && after.status !== "pending"
-        ? decisionEmail(info, after.status === "confirmed" ? "confirmed" : "denied")
-        : requestEditedEmail(info, after.status);
-    await trySendEmail(toEmail, msg);
+    await trySendEmail(toEmail, editNotificationEmail(before, after));
   }
 
   return NextResponse.json({ ok: true });
