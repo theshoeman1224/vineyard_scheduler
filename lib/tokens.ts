@@ -85,9 +85,13 @@ export function randomUUID(): string {
 // --- Admin session cookie -------------------------------------------------
 // value = <expiryMs>.<hmac(secret, "admin:<expiryMs>")
 
+// Single source of truth for session lifetime. The cookie's maxAge (in
+// seconds) must be derived from this, never hardcoded separately.
+export const SESSION_TTL_MS = 7 * 24 * 3600 * 1000;
+
 export function createAdminSession(
   secret: string,
-  ttlMs: number = 7 * 24 * 3600 * 1000,
+  ttlMs: number = SESSION_TTL_MS,
   now: number = Date.now(),
 ): string {
   const exp = now + ttlMs;

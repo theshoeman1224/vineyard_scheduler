@@ -1,16 +1,17 @@
 import { NextResponse } from "next/server";
-import { isAdmin } from "@/lib/admin";
+import { requireAdmin } from "@/lib/admin";
 import { deleteRoom, getRooms, upsertRoom } from "@/lib/data";
 import { roomUpsertSchema } from "@/lib/validation";
 
 export async function GET() {
+  const denied = await requireAdmin();
+  if (denied) return denied;
   return NextResponse.json({ rooms: await getRooms() });
 }
 
 export async function POST(req: Request) {
-  if (!(await isAdmin())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const denied = await requireAdmin();
+  if (denied) return denied;
   let body: unknown;
   try {
     body = await req.json();
@@ -27,9 +28,8 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  if (!(await isAdmin())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const denied = await requireAdmin();
+  if (denied) return denied;
   const url = new URL(req.url);
   const id = Number(url.searchParams.get("id"));
   if (!Number.isInteger(id)) {

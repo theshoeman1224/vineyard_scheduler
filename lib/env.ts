@@ -30,6 +30,12 @@ export function adminEmail(): string {
   return requiredEnv("ADMIN_EMAIL");
 }
 
+// True when ADMIN_EMAIL is set. Lets optional notification paths (like the
+// user-cancel notice) skip sending instead of throwing.
+export function adminEmailIsConfigured(): boolean {
+  return optionalEnv("ADMIN_EMAIL") !== undefined;
+}
+
 export function emailFrom(): string {
   return optionalEnv("EMAIL_FROM") ?? "House Scheduler <onboarding@resend.dev>";
 }

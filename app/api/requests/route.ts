@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createRequestSchema } from "@/lib/validation";
 import { createRequest, getRequestsAll, getRooms } from "@/lib/data";
+import { sortUniqueDates } from "@/lib/dates";
 import { adminNewRequestEmail } from "@/lib/emails";
 import { sendEmail } from "@/lib/mailer";
 import { adminEmail, appUrl, signingSecret } from "@/lib/env";
@@ -45,7 +46,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "One or more rooms not found" }, { status: 400 });
   }
 
-  const dates = [...new Set(input.dates)].sort();
+  const dates = sortUniqueDates(input.dates);
 
   let created: { groupId: string; ids: number[]; cancelToken: string };
   try {

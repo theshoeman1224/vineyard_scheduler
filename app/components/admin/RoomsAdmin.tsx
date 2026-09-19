@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 import type { RoomInfo } from "@/lib/availability";
+import { bedsLabel } from "@/app/lib/roomText";
+import { apiGet, apiSend, apiSendForm } from "@/app/lib/apiClient";
 
 type Rect = { x: number; y: number; w: number; h: number };
 
@@ -39,11 +41,12 @@ export function RoomsAdmin({ initialRooms }: { initialRooms: RoomInfo[] }) {
   const [drawing, setDrawing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Refetches the room list. Failures keep the stale list; the mutation
+  // that triggered it reports its own error.
   async function reloadRooms() {
-    const res = await fetch("/api/admin/rooms", { cache: "no-store" });
+    const res = await apiGet<{ rooms?: RoomInfo[] }>("/api/admin/rooms");
     if (res.ok) {
-      const data = await res.json();
-      setRooms(data.rooms ?? []);
+      setRooms(res.data.rooms ?? []);
     }
   }
 
@@ -58,24 +61,14 @@ export function RoomsAdmin({ initialRooms }: { initialRooms: RoomInfo[] }) {
   async function saveRoomPayload(body: object, successMsg: string) {
     setError(null);
     setMessage(null);
-    try {
-      const res = await fetch("/api/admin/rooms", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error ?? "Save failed");
-        return false;
-      }
-      setMessage(successMsg);
-      await reloadRooms();
-      return true;
-    } catch {
-      setError("Network error");
+    const res = await apiSend<unknown>("/api/admin/rooms", "POST", body);
+    if (!res.ok) {
+      setError(res.error);
       return false;
     }
+    setMessage(successMsg);
+    await reloadRooms();
+    return true;
   }
 
   async function addRoom(e: React.FormEvent) {
@@ -107,12 +100,9 @@ export function RoomsAdmin({ initialRooms }: { initialRooms: RoomInfo[] }) {
   async function removeRoom(room: RoomInfo) {
     if (!confirm(`Delete room “${room.name}”?`)) return;
     setError(null);
-    const res = await fetch(`/api/admin/rooms?id=${room.id}`, {
-      method: "DELETE",
-    });
-    const data = await res.json().catch(() => ({}));
+    const res = await apiSend<unknown>(`/api/admin/rooms?id=${room.id}`, "DELETE");
     if (!res.ok) {
-      setError(data.error ?? "Delete failed");
+      setError(res.error);
       return;
     }
     setMessage("Room deleted.");
@@ -178,13 +168,9 @@ export function RoomsAdmin({ initialRooms }: { initialRooms: RoomInfo[] }) {
     setError(null);
     const form = new FormData();
     form.set("file", file);
-    const res = await fetch("/api/admin/blueprint", {
-      method: "POST",
-      body: form,
-    });
-    const data = await res.json().catch(() => ({}));
+    const res = await apiSendForm<unknown>("/api/admin/blueprint", form);
     if (!res.ok) {
-      setError(data.error ?? "Upload failed");
+      setError(res.error);
       return;
     }
     setMessage("Blueprint uploaded.");
@@ -286,7 +272,7 @@ export function RoomsAdmin({ initialRooms }: { initialRooms: RoomInfo[] }) {
                       <span className="font-medium">{room.name}</span>
                       <span className="text-muted">
                         {" "}
-                        — {room.beds} bed{room.beds === 1 ? "" : "s"}, order{" "}
+                        &mdash; {bedsLabel(room.beds)}, order{" "}
                         {room.displayOrder}
                       </span>
                       {room.hotspotX != null ? (

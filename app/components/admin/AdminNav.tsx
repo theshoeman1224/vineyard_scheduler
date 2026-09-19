@@ -2,12 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { apiSend } from "@/app/lib/apiClient";
 
 export function AdminNav() {
   const router = useRouter();
 
   async function logout() {
-    await fetch("/api/admin/logout", { method: "POST" });
+    await apiSend("/api/admin/logout", "POST");
     router.push("/admin/login");
     router.refresh();
   }

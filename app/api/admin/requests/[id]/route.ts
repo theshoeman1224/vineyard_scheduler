@@ -1,21 +1,31 @@
 import { NextResponse } from "next/server";
-import { isAdmin } from "@/lib/admin";
+import { requireAdmin } from "@/lib/admin";
 import { deleteRequestAsAdmin, getRequestById, updateRequestAsAdmin } from "@/lib/data";
 import { requestEditSchema } from "@/lib/validation";
+import { sortUniqueDates } from "@/lib/dates";
 import { decisionEmail, requestEditedEmail } from "@/lib/emails";
 import { sendEmail } from "@/lib/mailer";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function PATCH(req: Request, ctx: Ctx) {
-  if (!(await isAdmin())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const { id } = await ctx.params;
+// Parses the [id] path param, returning the 400 response for a malformed
+// id, or the numeric id on success.
+function parseRequestId(id: string): { id: number } | { error: NextResponse } {
   const requestId = Number(id);
   if (!Number.isInteger(requestId)) {
-    return NextResponse.json({ error: "Bad id" }, { status: 400 });
+    return {
+      error: NextResponse.json({ error: "Bad id" }, { status: 400 }),
+    };
   }
+  return { id: requestId };
+}
+
+export async function PATCH(req: Request, ctx: Ctx) {
+  const denied = await requireAdmin();
+  if (denied) return denied;
+  const parsedId = parseRequestId((await ctx.params).id);
+  if ("error" in parsedId) return parsedId.error;
+  const requestId = parsedId.id;
 
   const before = await getRequestById(requestId);
   if (!before) {
@@ -34,7 +44,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
   const edit = parsed.data;
-  const dates = [...new Set(edit.dates)].sort();
+  const dates = sortUniqueDates(edit.dates);
 
   let result;
   try {
@@ -80,15 +90,11 @@ export async function PATCH(req: Request, ctx: Ctx) {
 }
 
 export async function DELETE(_req: Request, ctx: Ctx) {
-  if (!(await isAdmin())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const { id } = await ctx.params;
-  const requestId = Number(id);
-  if (!Number.isInteger(requestId)) {
-    return NextResponse.json({ error: "Bad id" }, { status: 400 });
-  }
-  await deleteRequestAsAdmin(requestId);
+  const denied = await requireAdmin();
+  if (denied) return denied;
+  const parsedId = parseRequestId((await ctx.params).id);
+  if ("error" in parsedId) return parsedId.error;
+  await deleteRequestAsAdmin(parsedId.id);
   return NextResponse.json({ ok: true });
 }
 

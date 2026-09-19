@@ -2,6 +2,7 @@
 
 import type { AvailabilityMap, RoomInfo } from "@/lib/availability";
 import { countBookableDates } from "@/lib/availability";
+import { bedsLabel } from "@/app/lib/roomText";
 
 export function RoomList({
   rooms,
@@ -76,7 +77,7 @@ export function RoomList({
                     isSelected ? "text-invert-fg/70" : "text-muted"
                   }
                 >
-                  {room.beds} bed{room.beds === 1 ? "" : "s"}
+                  {bedsLabel(room.beds)}
                   {selectedDates.length > 0
                     ? ` · ${bookable}/${selectedDates.length} dates free`
                     : ""}

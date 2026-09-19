@@ -2,6 +2,7 @@
 
 import type { AvailabilityMap, RoomInfo } from "@/lib/availability";
 import { countBookableDates } from "@/lib/availability";
+import { bedsLabel } from "@/app/lib/roomText";
 
 export function BlueprintMap({
   rooms,
@@ -70,7 +71,7 @@ export function BlueprintMap({
             <button
               key={room.id}
               type="button"
-              title={`${room.name} — ${room.beds} bed${room.beds === 1 ? "" : "s"}`}
+              title={`${room.name} — ${bedsLabel(room.beds)}`}
               onClick={() => onSelect(room.id)}
               style={{
                 left: `${room.hotspotX}%`,

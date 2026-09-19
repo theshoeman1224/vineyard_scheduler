@@ -3,6 +3,8 @@
 import { useState } from "react";
 import type { RoomInfo } from "@/lib/availability";
 import { formatDateHuman } from "@/lib/dates";
+import { roomLabel } from "@/app/lib/roomText";
+import { apiSend } from "@/app/lib/apiClient";
 
 export function RequestForm({
   rooms,
@@ -40,30 +42,21 @@ export function RequestForm({
     }
     setSubmitting(true);
     try {
-      const res = await fetch("/api/requests", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          name,
-          email,
-          roomIds,
-          dates: selectedDates,
-          note,
-        }),
-      });
-      const data = await res.json();
+      const res = await apiSend<{ ok: boolean; cancelUrl: string }>(
+        "/api/requests",
+        "POST",
+        { name, email, roomIds, dates: selectedDates, note },
+      );
       if (!res.ok) {
-        onError(data.error ?? "Something went wrong");
+        onError(res.error);
         return;
       }
-      onSuccess(data.cancelUrl);
+      onSuccess(res.data.cancelUrl);
       setName("");
       setEmail("");
       setNote("");
       for (const id of [...roomIds]) onRoomChange(id);
       onClearDates();
-    } catch {
-      onError("Network error — try again");
     } finally {
       setSubmitting(false);
     }
@@ -89,7 +82,7 @@ export function RequestForm({
                   className="rounded-full border border-edge bg-subtle px-2 py-0.5 text-xs font-medium hover:bg-edge"
                   title="Click to remove this room"
                 >
-                  {room.name} ({room.beds} bed{room.beds === 1 ? "" : "s"}) ✕
+                  {roomLabel(room)} ✕
                 </button>
               ))}
             </div>

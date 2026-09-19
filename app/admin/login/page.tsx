@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
+import { apiSend } from "@/app/lib/apiClient";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -14,24 +15,14 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    try {
-      const res = await fetch("/api/admin/login", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ password }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error ?? "Login failed");
-        return;
-      }
-      router.push("/admin");
-      router.refresh();
-    } catch {
-      setError("Network error — try again");
-    } finally {
-      setLoading(false);
+    const res = await apiSend<unknown>("/api/admin/login", "POST", { password });
+    setLoading(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
     }
+    router.push("/admin");
+    router.refresh();
   }
 
   return (

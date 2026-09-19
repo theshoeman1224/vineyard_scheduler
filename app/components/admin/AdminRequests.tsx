@@ -3,6 +3,9 @@
 import { useState } from "react";
 import type { RoomInfo } from "@/lib/availability";
 import { formatDateHuman, isValidDateStr } from "@/lib/dates";
+import { roomLabel } from "@/app/lib/roomText";
+import { apiGet, apiSend } from "@/app/lib/apiClient";
+import { StatusPill } from "@/app/components/StatusPill";
 
 type AdminRequest = {
   id: number;
@@ -18,6 +21,7 @@ type AdminRequest = {
   dates: string[];
 };
 
+// Text <-> sorted date-list conversion for the edit form's textarea.
 function parseDates(raw: string): string[] {
   return raw
     .split(/[\s,]+/)
@@ -29,22 +33,6 @@ function parseDates(raw: string): string[] {
 
 function datesToText(dates: string[]): string {
   return dates.join("\n");
-}
-
-function StatusPill({ status }: { status: AdminRequest["status"] }) {
-  const styles =
-    status === "confirmed"
-      ? "bg-green-100 text-green-800"
-      : status === "pending"
-        ? "bg-amber-100 text-amber-800"
-        : "bg-edge text-muted";
-  return (
-    <span
-      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize ${styles}`}
-    >
-      {status}
-    </span>
-  );
 }
 
 export function AdminRequests({
@@ -59,52 +47,42 @@ export function AdminRequests({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<number | null>(null);
 
+  // Refetches the public requests list. Failures keep the stale table; a
+  // banner would be noise for a background refresh.
   async function reload() {
-    const res = await fetch("/api/requests", { cache: "no-store" });
+    const res = await apiGet<{ requests?: AdminRequest[] }>("/api/requests");
     if (res.ok) {
-      const data = await res.json();
-      setRequests(data.requests ?? []);
+      setRequests(res.data.requests ?? []);
     }
   }
 
   async function patch(id: number, body: object) {
     setBusy(id);
     setError(null);
-    try {
-      const res = await fetch(`/api/admin/requests/${id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error ?? "Update failed");
-        return false;
-      }
-      await reload();
-      return true;
-    } catch {
-      setError("Network error");
+    const res = await apiSend<unknown>(
+      `/api/admin/requests/${id}`,
+      "PATCH",
+      body,
+    );
+    setBusy(null);
+    if (!res.ok) {
+      setError(res.error);
       return false;
-    } finally {
-      setBusy(null);
     }
+    await reload();
+    return true;
   }
 
   async function remove(id: number) {
     if (!confirm(`Delete request #${id} permanently?`)) return;
     setBusy(id);
-    try {
-      const res = await fetch(`/api/admin/requests/${id}`, { method: "DELETE" });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error ?? "Delete failed");
-        return;
-      }
-      await reload();
-    } finally {
-      setBusy(null);
+    const res = await apiSend<unknown>(`/api/admin/requests/${id}`, "DELETE");
+    setBusy(null);
+    if (!res.ok) {
+      setError(res.error);
+      return;
     }
+    await reload();
   }
 
   async function quickDecide(r: AdminRequest, status: "confirmed" | "denied") {
@@ -267,28 +245,17 @@ function EditForm({
     e.preventDefault();
     setSaving(true);
     onError("");
-    try {
-      const res = await fetch(`/api/admin/requests/${request.id}`, {
-        method: "PATCH",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          name,
-          email,
-          roomId,
-          status,
-          note,
-          dates,
-        }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        onError(data.error ?? "Save failed");
-        return;
-      }
-      await onSaved();
-    } finally {
-      setSaving(false);
+    const res = await apiSend<unknown>(
+      `/api/admin/requests/${request.id}`,
+      "PATCH",
+      { name, email, roomId, status, note, dates },
+    );
+    setSaving(false);
+    if (!res.ok) {
+      onError(res.error);
+      return;
     }
+    await onSaved();
   }
 
   return (
@@ -326,7 +293,7 @@ function EditForm({
           >
             {rooms.map((room) => (
               <option key={room.id} value={room.id}>
-                {room.name} ({room.beds} beds)
+                {roomLabel(room)}
               </option>
             ))}
           </select>

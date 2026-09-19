@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { AvailabilityMap, RoomInfo } from "@/lib/availability";
 import { sortUniqueDates } from "@/lib/dates";
+import { apiGet } from "@/app/lib/apiClient";
 import { CalendarCard } from "./CalendarCard";
 import { BlueprintMap } from "./BlueprintMap";
 import { RoomList } from "./RoomList";
@@ -45,21 +46,16 @@ export function Scheduler({
   const [success, setSuccess] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
-    try {
-      const [availRes, reqRes] = await Promise.all([
-        fetch("/api/availability", { cache: "no-store" }),
-        fetch("/api/requests", { cache: "no-store" }),
-      ]);
-      if (availRes.ok) {
-        const data = await availRes.json();
-        setAvailability(data.availability ?? {});
-      }
-      if (reqRes.ok) {
-        const data = await reqRes.json();
-        setRequests(data.requests ?? []);
-      }
-    } catch {
-      // keep stale data on failure
+    // Keep stale data on failure — a blip shouldn't blank the UI.
+    const [availRes, reqRes] = await Promise.all([
+      apiGet<{ availability?: AvailabilityMap }>("/api/availability"),
+      apiGet<{ requests?: RequestPublic[] }>("/api/requests"),
+    ]);
+    if (availRes.ok) {
+      setAvailability(availRes.data.availability ?? {});
+    }
+    if (reqRes.ok) {
+      setRequests(reqRes.data.requests ?? []);
     }
   }, []);
 

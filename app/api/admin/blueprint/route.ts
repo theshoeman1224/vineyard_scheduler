@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
-import { isAdmin } from "@/lib/admin";
+import { requireAdmin } from "@/lib/admin";
 import { getBlueprintRow, saveBlueprint } from "@/lib/data";
 
 const MAX_BYTES = 3 * 1024 * 1024; // 3MB
 const ALLOWED = new Set(["image/png", "image/jpeg", "image/webp"]);
 
 export async function POST(req: Request) {
-  if (!(await isAdmin())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const denied = await requireAdmin();
+  if (denied) return denied;
   let form: FormData;
   try {
     form = await req.formData();
@@ -34,6 +33,8 @@ export async function POST(req: Request) {
 }
 
 export async function GET() {
+  const denied = await requireAdmin();
+  if (denied) return denied;
   const row = await getBlueprintRow();
   return NextResponse.json({
     hasBlueprint: !!row,

@@ -1,23 +1,8 @@
 "use client";
 
 import type { RequestPublic } from "./Scheduler";
+import { StatusPill } from "./StatusPill";
 import { formatDateHuman } from "@/lib/dates";
-
-function StatusPill({ status }: { status: RequestPublic["status"] }) {
-  const styles =
-    status === "confirmed"
-      ? "bg-green-100 text-green-800"
-      : status === "pending"
-        ? "bg-amber-100 text-amber-800"
-        : "bg-edge text-muted";
-  return (
-    <span
-      className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium capitalize ${styles}`}
-    >
-      {status}
-    </span>
-  );
-}
 
 export function RequestsTable({ requests }: { requests: RequestPublic[] }) {
   const visible = requests.filter((r) => r.status !== "denied");
