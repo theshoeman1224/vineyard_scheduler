@@ -57,16 +57,16 @@ export function CalendarCard({
         <h2 className="text-lg font-semibold">1. Pick dates</h2>
         <div className="flex items-center gap-3 text-xs text-muted">
           <span className="flex items-center gap-1">
-            <span className="inline-block h-2.5 w-2.5 rounded-full bg-green-500" />
-            booked
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-green-700" />
+            <span>booked</span>
           </span>
           <span className="flex items-center gap-1">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" />
-            requested
+            <span>requested</span>
           </span>
           <span className="flex items-center gap-1">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-neutral-300 dark:bg-neutral-600" />
-            full
+            <span>full</span>
           </span>
         </div>
       </div>

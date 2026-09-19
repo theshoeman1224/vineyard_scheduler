@@ -33,7 +33,7 @@ export function BlueprintMap({
         <a className="underline" href="/admin/rooms">
           the admin panel
         </a>
-        .
+        {"."}
       </div>
     );
   }

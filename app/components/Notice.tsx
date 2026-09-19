@@ -18,12 +18,23 @@ export function Notice({
   readonly kind: keyof typeof KIND_STYLES;
   readonly children: React.ReactNode;
 }) {
+  if (kind === "error") {
+    return (
+      <p
+        className={`rounded-md px-3 py-2 text-sm ${KIND_STYLES[kind]}`}
+        role="alert"
+      >
+        {children}
+      </p>
+    );
+  }
+  // <output> exposes the status role natively, so live-region feedback
+  // works the same across browsers and assistive tech.
   return (
-    <p
-      className={`rounded-md px-3 py-2 text-sm ${KIND_STYLES[kind]}`}
-      role={kind === "error" ? "alert" : "status"}
+    <output
+      className={`block rounded-md px-3 py-2 text-sm ${KIND_STYLES[kind]}`}
     >
       {children}
-    </p>
+    </output>
   );
 }
