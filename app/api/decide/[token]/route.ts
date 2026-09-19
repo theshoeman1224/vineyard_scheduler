@@ -2,7 +2,7 @@ import { decideGroup, getGroupRequests } from "@/lib/data";
 import { verifyDecideToken } from "@/lib/tokens";
 import { signingSecret } from "@/lib/env";
 import { groupDecisionEmail } from "@/lib/emails";
-import { sendEmail } from "@/lib/mailer";
+import { trySendEmail } from "@/lib/mailer";
 import {
   COLOR_AMBER,
   COLOR_GREEN,
@@ -34,9 +34,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ token: string 
   const failed = results.filter((r) => !r.ok);
 
   // Notify the requester with a per-room summary (they shared one email).
+  // The decision itself is already committed; a mailer failure must not
+  // turn this page into an error.
   const email = group.find((r) => r.email)?.email;
   if (email) {
-    await sendEmail(
+    await trySendEmail(
       email,
       groupDecisionEmail(
         {

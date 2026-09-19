@@ -3,7 +3,7 @@ import { createRequestSchema } from "@/lib/validation";
 import { createRequest, getRequestsAll, getRooms } from "@/lib/data";
 import { sortUniqueDates } from "@/lib/dates";
 import { adminNewRequestEmail } from "@/lib/emails";
-import { sendEmail } from "@/lib/mailer";
+import { trySendEmail } from "@/lib/mailer";
 import { adminEmail, appUrl, signingSecret } from "@/lib/env";
 import { signDecideToken } from "@/lib/tokens";
 
@@ -65,25 +65,19 @@ export async function POST(req: Request) {
   }
 
   // Notify the admin — never fail the request because of email problems.
-  let emailQueued = false;
-  try {
-    const base = appUrl();
-    const msg = adminNewRequestEmail(
-      {
-        name: input.name,
-        email: input.email,
-        rooms: requested.map((r) => r.name),
-        dates,
-        note: input.note,
-      },
-      `${base}/api/decide/${signDecideToken(created.groupId, "approve", signingSecret())}`,
-      `${base}/api/decide/${signDecideToken(created.groupId, "deny", signingSecret())}`,
-    );
-    const res = await sendEmail(adminEmail(), msg);
-    emailQueued = res.ok;
-  } catch {
-    emailQueued = false;
-  }
+  const msg = adminNewRequestEmail(
+    {
+      name: input.name,
+      email: input.email,
+      rooms: requested.map((r) => r.name),
+      dates,
+      note: input.note,
+    },
+    `${appUrl()}/api/decide/${signDecideToken(created.groupId, "approve", signingSecret())}`,
+    `${appUrl()}/api/decide/${signDecideToken(created.groupId, "deny", signingSecret())}`,
+  );
+  const emailRes = await trySendEmail(adminEmail(), msg);
+  const emailQueued = emailRes.ok;
 
   return NextResponse.json({
     ok: true,

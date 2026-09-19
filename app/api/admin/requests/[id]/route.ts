@@ -4,7 +4,7 @@ import { deleteRequestAsAdmin, getRequestById, updateRequestAsAdmin } from "@/li
 import { requestEditSchema } from "@/lib/validation";
 import { sortUniqueDates } from "@/lib/dates";
 import { decisionEmail, requestEditedEmail } from "@/lib/emails";
-import { sendEmail } from "@/lib/mailer";
+import { trySendEmail } from "@/lib/mailer";
 
 type Ctx = { params: Promise<{ id: string }> };
 
@@ -66,7 +66,8 @@ export async function PATCH(req: Request, ctx: Ctx) {
     return NextResponse.json({ error: result.error }, { status: 409 });
   }
 
-  // Notify the requester if they provided an email.
+  // Notify the requester if they provided an email. The DB update already
+  // succeeded, so a mailer failure must not fail this response.
   const after = await getRequestById(requestId);
   const toEmail = after?.email ?? before.email;
   if (after && toEmail) {
@@ -83,7 +84,7 @@ export async function PATCH(req: Request, ctx: Ctx) {
       statusChanged && after.status !== "pending"
         ? decisionEmail(info, after.status === "confirmed" ? "confirmed" : "denied")
         : requestEditedEmail(info, after.status);
-    await sendEmail(toEmail, msg);
+    await trySendEmail(toEmail, msg);
   }
 
   return NextResponse.json({ ok: true });

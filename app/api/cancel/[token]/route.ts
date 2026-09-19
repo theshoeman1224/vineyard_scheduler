@@ -1,6 +1,6 @@
 import { cancelByToken, getGroupByCancelToken } from "@/lib/data";
 import { requestCancelledByUserEmail } from "@/lib/emails";
-import { sendEmail } from "@/lib/mailer";
+import { trySendEmail } from "@/lib/mailer";
 import { adminEmail, adminEmailIsConfigured } from "@/lib/env";
 import { COLOR_RED, roomSummaryList, tokenPage } from "@/app/lib/tokenPage";
 
@@ -38,9 +38,10 @@ export async function POST(_req: Request, ctx: { params: Promise<{ token: string
     return tokenPage("Already withdrawn", "This request no longer exists.", COLOR_RED);
   }
 
-  // Notify the admin, but only when an inbox exists to notify.
+  // Notify the admin, but only when an inbox exists to notify — and
+  // never let a mailer failure fail the withdrawal itself.
   if (adminEmailIsConfigured()) {
-    await sendEmail(
+    await trySendEmail(
       adminEmail(),
       requestCancelledByUserEmail({
         name: group[0].name,

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin";
-import { deleteRoom, getRooms, upsertRoom } from "@/lib/data";
+import { getRooms, upsertRoom } from "@/lib/data";
 import { roomUpsertSchema } from "@/lib/validation";
 
 export async function GET() {
@@ -24,21 +24,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
   await upsertRoom(parsed.data);
-  return NextResponse.json({ ok: true });
-}
-
-export async function DELETE(req: Request) {
-  const denied = await requireAdmin();
-  if (denied) return denied;
-  const url = new URL(req.url);
-  const id = Number(url.searchParams.get("id"));
-  if (!Number.isInteger(id)) {
-    return NextResponse.json({ error: "Bad id" }, { status: 400 });
-  }
-  const result = await deleteRoom(id);
-  if (!result.ok) {
-    return NextResponse.json({ error: result.error }, { status: 409 });
-  }
   return NextResponse.json({ ok: true });
 }
 

@@ -23,3 +23,18 @@ export async function sendEmail(
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
 }
+
+// Variant that never throws, for flows where the database change has
+// already succeeded and a mailer crash must not fail the whole request
+// (an admin PATCH, a withdrawal confirmation). Callers surface the
+// ok/error result however they like.
+export async function trySendEmail(
+  to: string,
+  msg: EmailMessage,
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    return await sendEmail(to, msg);
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}

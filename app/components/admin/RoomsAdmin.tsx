@@ -101,7 +101,7 @@ export function RoomsAdmin({ initialRooms }: { initialRooms: RoomInfo[] }) {
   async function removeRoom(room: RoomInfo) {
     if (!confirm(`Delete room “${room.name}”?`)) return;
     setError(null);
-    const res = await apiSend<unknown>(`/api/admin/rooms?id=${room.id}`, "DELETE");
+    const res = await apiSend<unknown>(`/api/admin/rooms/${room.id}`, "DELETE");
     if (!res.ok) {
       setError(res.error);
       return;
