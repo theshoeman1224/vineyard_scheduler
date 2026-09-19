@@ -59,12 +59,17 @@ export async function POST(req: Request, ctx: { params: Promise<{ token: string 
   const verb = payload.a === "approve" ? "approved" : "denied";
   let body = "";
   if (succeeded.length > 0) {
-    body += `<p style="color:${COLOR_GREEN}"><strong>${succeeded.length} room${succeeded.length === 1 ? "" : "s"} ${verb}:</strong></p>
-      <p>${succeeded.map((r) => `${r.roomName}`).join("<br/>")}</p>`;
+    const approvedRooms = succeeded.map((r) => r.roomName).join("<br/>");
+    const approvedHeading = `${succeeded.length} room${succeeded.length === 1 ? "" : "s"} ${verb}`;
+    body += `<p style="color:${COLOR_GREEN}"><strong>${approvedHeading}:</strong></p>
+      <p>${approvedRooms}</p>`;
   }
   if (failed.length > 0) {
+    const failedList = failed
+      .map((f) => `<strong>${f.roomName}</strong> &mdash; ${f.error}`)
+      .join("<br/>");
     body += `<p style="color:${COLOR_RED}"><strong>Could not be ${verb}:</strong></p>
-      <p>${failed.map((f) => `<strong>${f.roomName}</strong> &mdash; ${f.error}`).join("<br/>")}</p>
+      <p>${failedList}</p>
       <p>Those requests are unchanged and still pending; manage them in the admin panel.</p>`;
   }
   body += `<p style="color:#666;font-size:13px;">The requester has been notified (if they left an email).</p>`;

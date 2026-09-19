@@ -85,6 +85,12 @@ export function randomUUID(): string {
 // --- Admin session cookie -------------------------------------------------
 // value = <expiryMs>.<hmac(secret, "admin:<expiryMs>")
 
+// Signed message for the admin session cookie; shared by creation and
+// verification so they can never disagree.
+function adminSessionMessage(exp: number): string {
+  return `admin:${exp}`;
+}
+
 // Single source of truth for session lifetime. The cookie's maxAge (in
 // seconds) must be derived from this, never hardcoded separately.
 export const SESSION_TTL_MS = 7 * 24 * 3600 * 1000;
@@ -95,7 +101,7 @@ export function createAdminSession(
   now: number = Date.now(),
 ): string {
   const exp = now + ttlMs;
-  return `${exp}.${b64url(hmac(secret, `admin:${exp}`))}`;
+  return `${exp}.${b64url(hmac(secret, adminSessionMessage(exp)))}`;
 }
 
 export function verifyAdminSession(
@@ -109,7 +115,7 @@ export function verifyAdminSession(
   const [expRaw, sig] = parts;
   const exp = Number(expRaw);
   if (!Number.isFinite(exp) || exp <= now) return false;
-  const expected = b64url(hmac(secret, `admin:${exp}`));
+  const expected = b64url(hmac(secret, adminSessionMessage(exp)));
   let given: Buffer;
   let expectedBuf: Buffer;
   try {

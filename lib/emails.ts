@@ -111,11 +111,14 @@ export function groupDecisionEmail(
      <p><strong>Dates:</strong><br/>${listDates(req.dates)}</p>
      ${parts.join("")}`,
   );
+  const failedLines = failed
+    .map((f) => `Not confirmed: ${f.roomName} — ${f.error}`)
+    .join("\n");
   const text = `Hi ${req.name},
 The admin responded to your request.
 Dates: ${req.dates.join(", ")}
 Approved: ${approved.join(", ") || "none"}
-${failed.map((f) => `Not confirmed: ${f.roomName} — ${f.error}`).join("\n")}`;
+${failedLines}`;
   return { subject, html, text };
 }
 
