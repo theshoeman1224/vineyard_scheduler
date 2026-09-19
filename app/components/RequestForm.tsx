@@ -64,6 +64,13 @@ export function RequestForm({
     }
   }
 
+  let submitLabel = "Send request";
+  if (submitting) {
+    submitLabel = "Sending…";
+  } else if (roomIds.length > 1) {
+    submitLabel = `Send request for ${roomIds.length} rooms`;
+  }
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 text-sm">
       <div>
@@ -137,11 +144,7 @@ export function RequestForm({
         disabled={submitting}
         className="w-fit rounded-md bg-invert px-4 py-2 font-medium text-invert-fg hover:opacity-85 disabled:opacity-50"
       >
-        {submitting
-          ? "Sending…"
-          : roomIds.length > 1
-            ? `Send request for ${roomIds.length} rooms`
-            : "Send request"}
+        {submitLabel}
       </button>
     </form>
   );

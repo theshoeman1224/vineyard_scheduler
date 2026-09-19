@@ -69,18 +69,22 @@ export async function POST(req: Request, ctx: { params: Promise<{ token: string 
   }
   body += `<p style="color:#666;font-size:13px;">The requester has been notified (if they left an email).</p>`;
 
-  const title =
-    failed.length === 0
-      ? `Request ${verb}`
-      : succeeded.length > 0
-        ? `Partly ${verb}`
-        : "Could not apply decision";
-  const headingColor =
-    failed.length === 0
-      ? payload.a === "approve"
-        ? COLOR_GREEN
-        : COLOR_RED
-      : COLOR_AMBER;
+  let title: string;
+  if (failed.length === 0) {
+    title = `Request ${verb}`;
+  } else if (succeeded.length > 0) {
+    title = `Partly ${verb}`;
+  } else {
+    title = "Could not apply decision";
+  }
+  let headingColor: string;
+  if (failed.length > 0) {
+    headingColor = COLOR_AMBER;
+  } else if (payload.a === "approve") {
+    headingColor = COLOR_GREEN;
+  } else {
+    headingColor = COLOR_RED;
+  }
   return tokenPage(title, body, headingColor);
 }
 

@@ -2,7 +2,11 @@
 
 import type { AvailabilityMap, RoomInfo } from "@/lib/availability";
 import { countBookableDates } from "@/lib/availability";
-import { bedsLabel } from "@/app/lib/roomText";
+import {
+  availabilityDotClass,
+  bedsLabel,
+  roomsSelectedHint,
+} from "@/app/lib/roomText";
 
 export function RoomList({
   rooms,
@@ -27,11 +31,7 @@ export function RoomList({
   return (
     <div className="flex flex-col gap-2">
       <p className="min-h-5 text-xs text-muted">
-        {selectedRoomIds.length > 1
-          ? `${selectedRoomIds.length} rooms selected — the calendar shows these rooms combined.`
-          : selectedRoomIds.length === 1
-            ? "1 room selected — click more rooms to combine them for large parties."
-            : "Click rooms to select — combine several for large parties."}
+        {roomsSelectedHint(selectedRoomIds.length, "list")}
       </p>
       <ul className="flex flex-col gap-2">
         {rooms.map((room) => {
@@ -57,13 +57,7 @@ export function RoomList({
               >
                 <span className="flex items-center gap-2">
                   <span
-                    className={`inline-block h-2.5 w-2.5 rounded-full ${
-                      fullyAvailable
-                        ? "bg-green-500"
-                        : partial
-                          ? "bg-amber-400"
-                          : "bg-neutral-300 dark:bg-neutral-600"
-                    }`}
+                    className={`inline-block h-2.5 w-2.5 rounded-full ${availabilityDotClass(fullyAvailable, partial)}`}
                   />
                   <span className="font-medium">{room.name}</span>
                   {isSelected ? (
