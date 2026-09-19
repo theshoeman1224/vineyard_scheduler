@@ -1,7 +1,7 @@
 import { Scheduler } from "@/app/components/Scheduler";
 import { getAvailabilityRange, getRequestsAll, getRooms } from "@/lib/data";
 import { addDaysStr, todayStr } from "@/lib/dates";
-import type { RoomInfo } from "@/lib/availability";
+import { toPublicRequest } from "@/app/lib/requestTypes";
 
 export const dynamic = "force-dynamic";
 
@@ -17,19 +17,9 @@ export default async function Home() {
   return (
     <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
       <Scheduler
-        initialRooms={rooms as RoomInfo[]}
+        initialRooms={rooms}
         initialAvailability={availability}
-        initialRequests={requests.map((r) => ({
-          id: r.id,
-          name: r.name,
-          email: r.email,
-          roomId: r.roomId,
-          roomName: r.roomName,
-          status: r.status,
-          note: r.note,
-          dates: r.dates,
-          createdAt: r.createdAt.toISOString(),
-        }))}
+        initialRequests={requests.map(toPublicRequest)}
       />
     </main>
   );

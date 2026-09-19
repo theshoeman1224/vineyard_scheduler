@@ -3,8 +3,10 @@
 import { useState } from "react";
 import type { RoomInfo } from "@/lib/availability";
 import { formatDateHuman } from "@/lib/dates";
+import { MAX_NAME_LENGTH, MAX_NOTE_LENGTH } from "@/lib/validation";
 import { roomLabel } from "@/app/lib/roomText";
 import { apiSend } from "@/app/lib/apiClient";
+import { Field, inputClass } from "@/app/components/Field";
 
 export function RequestForm({
   rooms,
@@ -94,41 +96,42 @@ export function RequestForm({
         )}
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="flex flex-col gap-1">
-          <span className="text-fg">Your name</span>
+        <Field label="Your name">
           <input
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            maxLength={80}
-            className="rounded-md border border-edge bg-card px-3 py-2"
+            maxLength={MAX_NAME_LENGTH}
+            className={inputClass}
             placeholder="e.g. Josh"
           />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-fg">
-            Email <span className="text-muted">(optional — for updates)</span>
-          </span>
+        </Field>
+        <Field
+          label={
+            <>
+              Email <span className="text-muted">(optional — for updates)</span>
+            </>
+          }
+        >
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded-md border border-edge bg-card px-3 py-2"
+            className={inputClass}
             placeholder="you@example.com"
           />
-        </label>
+        </Field>
       </div>
-      <label className="flex flex-col gap-1">
-        <span className="text-fg">Note (optional)</span>
+      <Field label="Note (optional)">
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          maxLength={500}
+          maxLength={MAX_NOTE_LENGTH}
           rows={2}
-          className="rounded-md border border-edge bg-card px-3 py-2"
+          className={inputClass}
           placeholder="Anything the admin should know"
         />
-      </label>
+      </Field>
       <button
         type="submit"
         disabled={submitting}

@@ -50,6 +50,25 @@ export function sortUniqueDates(dates: string[]): string[] {
   return [...new Set(dates)].sort();
 }
 
+// Splits whitespace- or comma-separated text into candidate date strings.
+export function dateTextParts(raw: string): string[] {
+  return raw
+    .split(/[\s,]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+// Parses a dates textarea (one per line or comma-separated) into a
+// sorted list, silently dropping entries that are not valid dates.
+export function parseDatesText(raw: string): string[] {
+  return dateTextParts(raw).filter(isValidDateStr).sort();
+}
+
+// Inverse of parseDatesText for rendering a textarea.
+export function datesToText(dates: string[]): string {
+  return dates.join("\n");
+}
+
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",

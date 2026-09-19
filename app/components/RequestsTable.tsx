@@ -1,6 +1,6 @@
 "use client";
 
-import type { RequestPublic } from "./Scheduler";
+import type { RequestPublic } from "@/app/lib/requestTypes";
 import { StatusPill } from "./StatusPill";
 import { formatDateHuman } from "@/lib/dates";
 

@@ -1,26 +1,17 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import type { AvailabilityMap, RoomInfo } from "@/lib/availability";
 import { sortUniqueDates } from "@/lib/dates";
 import { apiGet } from "@/app/lib/apiClient";
+import type { RequestPublic } from "@/app/lib/requestTypes";
+import { Notice } from "@/app/components/Notice";
 import { CalendarCard } from "./CalendarCard";
 import { BlueprintMap } from "./BlueprintMap";
 import { RoomList } from "./RoomList";
 import { RequestForm } from "./RequestForm";
 import { RequestsTable } from "./RequestsTable";
 
-export type RequestPublic = {
-  id: number;
-  name: string;
-  email?: string | null;
-  roomId: number;
-  roomName: string;
-  status: "pending" | "confirmed" | "denied";
-  note?: string | null;
-  createdAt: string;
-  dates: string[];
-};
 export function Scheduler({
   initialRooms,
   initialAvailability,
@@ -30,7 +21,8 @@ export function Scheduler({
   initialAvailability: AvailabilityMap;
   initialRequests: RequestPublic[];
 }) {
-  const [rooms] = useState<RoomInfo[]>(initialRooms);
+  // Rooms never change client-side; only availability and requests refresh.
+  const rooms = initialRooms;
   const [availability, setAvailability] = useState(initialAvailability);
   const [requests, setRequests] = useState(initialRequests);
   const [selectedDates, setSelectedDates] = useState<string[]>([]);
@@ -74,15 +66,12 @@ export function Scheduler({
     [refresh],
   );
 
-  const requestFormNode = useMemo(() => {
-    if (selectedDates.length === 0) {
-      return (
-        <p className="text-sm text-muted">
-          Pick one or more dates on the calendar to start a request.
-        </p>
-      );
-    }
-    return (
+  const requestFormNode =
+    selectedDates.length === 0 ? (
+      <p className="text-sm text-muted">
+        Pick one or more dates on the calendar to start a request.
+      </p>
+    ) : (
       <RequestForm
         rooms={rooms}
         selectedDates={selectedDates}
@@ -93,7 +82,6 @@ export function Scheduler({
         onClearDates={() => onDatesChange([])}
       />
     );
-  }, [selectedDates, rooms, roomIds, toggleRoom, onSubmitSuccess, onDatesChange]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -163,11 +151,7 @@ export function Scheduler({
           <div className="mt-4 border-t border-edge pt-4">
             {requestFormNode}
           </div>
-          {submitError ? (
-            <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-400">
-              {submitError}
-            </p>
-          ) : null}
+          {submitError ? <Notice kind="error">{submitError}</Notice> : null}
           {success ? (
             <div className="mt-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-800 dark:bg-green-500/10 dark:text-green-300">
               <p className="font-medium">Request sent to the admin.</p>

@@ -2,8 +2,10 @@
 
 import { useRef, useState } from "react";
 import type { RoomInfo } from "@/lib/availability";
+import { MAX_BEDS, MAX_ROOM_NAME_LENGTH } from "@/lib/validation";
 import { bedsLabel } from "@/app/lib/roomText";
 import { apiGet, apiSend, apiSendForm } from "@/app/lib/apiClient";
+import { Notice } from "@/app/components/Notice";
 
 type Rect = { x: number; y: number; w: number; h: number };
 
@@ -23,7 +25,6 @@ function clampRect(r: Rect): Rect {
 
 export function RoomsAdmin({ initialRooms }: { initialRooms: RoomInfo[] }) {
   const [rooms, setRooms] = useState(initialRooms);
-  const [bpVersion, setBpVersion] = useState<number>(() => Date.now());
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -174,22 +175,13 @@ export function RoomsAdmin({ initialRooms }: { initialRooms: RoomInfo[] }) {
       return;
     }
     setMessage("Blueprint uploaded.");
-    setBpVersion(Date.now());
     formEl.reset();
   }
 
   return (
     <div className="flex flex-col gap-6">
-      {error ? (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-400">
-          {error}
-        </p>
-      ) : null}
-      {message ? (
-        <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-800 dark:bg-green-500/10 dark:text-green-300">
-          {message}
-        </p>
-      ) : null}
+      {error ? <Notice kind="error">{error}</Notice> : null}
+      {message ? <Notice kind="success">{message}</Notice> : null}
 
       <section className="rounded-lg border border-edge bg-card p-4 shadow-sm">
         <h2 className="mb-3 font-semibold">Blueprint image</h2>
@@ -227,6 +219,7 @@ export function RoomsAdmin({ initialRooms }: { initialRooms: RoomInfo[] }) {
                       <input
                         value={editName}
                         onChange={(e) => setEditName(e.target.value)}
+                        maxLength={MAX_ROOM_NAME_LENGTH}
                         className="rounded-md border border-edge bg-card px-2 py-1"
                       />
                     </label>
@@ -235,7 +228,7 @@ export function RoomsAdmin({ initialRooms }: { initialRooms: RoomInfo[] }) {
                       <input
                         type="number"
                         min={0}
-                        max={20}
+                        max={MAX_BEDS}
                         value={editBeds}
                         onChange={(e) => setEditBeds(Number(e.target.value))}
                         className="w-16 rounded-md border border-edge bg-card px-2 py-1"
@@ -342,6 +335,7 @@ export function RoomsAdmin({ initialRooms }: { initialRooms: RoomInfo[] }) {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="e.g. Loft"
+              maxLength={MAX_ROOM_NAME_LENGTH}
               className="rounded-md border border-edge bg-card px-2 py-1"
             />
           </label>
@@ -350,7 +344,7 @@ export function RoomsAdmin({ initialRooms }: { initialRooms: RoomInfo[] }) {
             <input
               type="number"
               min={0}
-              max={20}
+              max={MAX_BEDS}
               value={newBeds}
               onChange={(e) => setNewBeds(Number(e.target.value))}
               className="w-16 rounded-md border border-edge bg-card px-2 py-1"
@@ -384,15 +378,20 @@ export function RoomsAdmin({ initialRooms }: { initialRooms: RoomInfo[] }) {
           </p>
         ) : (
           <p className="mb-3 text-sm">
-            Drawing for <strong>{rooms.find((r) => r.id === hotspotRoomId)?.name}</strong>
+            Drawing for{" "}
+            <strong>{rooms.find((r) => r.id === hotspotRoomId)?.name}</strong>
             {drawn ? (
-              <>
-                {" "}
-                — saved rect: x {Math.round(clampRect(normalize(drawn)).x)}%, y{" "}
-                {Math.round(clampRect(normalize(drawn)).y)}%, w{" "}
-                {Math.round(clampRect(normalize(drawn)).w)}%, h{" "}
-                {Math.round(clampRect(normalize(drawn)).h)}%
-              </>
+              (() => {
+                // Compute the saved rect once; it is rendered four ways.
+                const r = clampRect(normalize(drawn));
+                return (
+                  <>
+                    {" "}
+                    &mdash; saved rect: x {Math.round(r.x)}%, y {Math.round(r.y)}%,
+                    w {Math.round(r.w)}%, h {Math.round(r.h)}%
+                  </>
+                );
+              })()
             ) : (
               " — drag on the blueprint to draw the room area."
             )}
@@ -418,7 +417,7 @@ export function RoomsAdmin({ initialRooms }: { initialRooms: RoomInfo[] }) {
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={`/api/blueprint?v=${bpVersion}`}
+            src="/api/blueprint"
             alt="House blueprint"
             className="pointer-events-none block w-full"
             draggable={false}

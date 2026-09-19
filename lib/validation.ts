@@ -3,6 +3,13 @@ import { isValidDateStr, todayStr } from "./dates";
 
 // Public API validation schemas.
 
+// Input limits shared by the zod schemas and the HTML inputs so the
+// browser's maxlength and the server's limit cannot drift apart.
+export const MAX_NAME_LENGTH = 80;
+export const MAX_NOTE_LENGTH = 500;
+export const MAX_ROOM_NAME_LENGTH = 60;
+export const MAX_BEDS = 20;
+
 const dateStr = z
   .string()
   .refine((s) => isValidDateStr(s), "Invalid date, expected YYYY-MM-DD");
@@ -22,7 +29,7 @@ const optionalEmail = z
   .default(null);
 
 const optionalNote = z
-  .union([z.string().trim().max(500, "Note too long"), z.undefined(), z.null()])
+  .union([z.string().trim().max(MAX_NOTE_LENGTH, "Note too long"), z.undefined(), z.null()])
   .transform((v) => (v ? v : null))
   .default(null);
 
@@ -32,7 +39,7 @@ const nullableEmail = z
   .default(null);
 
 const nullableNote = z
-  .union([z.string().max(500), z.null()])
+  .union([z.string().max(MAX_NOTE_LENGTH), z.null()])
   .transform((v) => (v ? v : null))
   .default(null);
 
@@ -41,7 +48,7 @@ export const createRequestSchema = z.object({
     .string()
     .trim()
     .min(1, "Name is required")
-    .max(80, "Name too long"),
+    .max(MAX_NAME_LENGTH, "Name too long"),
   email: optionalEmail,
   roomIds: z
     .array(z.number().int().positive())
@@ -60,8 +67,8 @@ export type CreateRequestInput = z.infer<typeof createRequestSchema>;
 
 export const roomUpsertSchema = z.object({
   id: z.number().int().positive().optional(),
-  name: z.string().trim().min(1).max(60),
-  beds: z.number().int().min(0).max(20),
+  name: z.string().trim().min(1).max(MAX_ROOM_NAME_LENGTH),
+  beds: z.number().int().min(0).max(MAX_BEDS),
   displayOrder: z.number().int().min(0).max(1000),
   hotspotX: z.number().min(0).max(100).nullable().optional(),
   hotspotY: z.number().min(0).max(100).nullable().optional(),
@@ -70,7 +77,7 @@ export const roomUpsertSchema = z.object({
 });
 
 export const requestEditSchema = z.object({
-  name: z.string().trim().min(1).max(80),
+  name: z.string().trim().min(1).max(MAX_NAME_LENGTH),
   email: nullableEmail,
   roomId: z.number().int().positive(),
   status: z.enum(["pending", "confirmed", "denied"]),

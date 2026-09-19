@@ -2,38 +2,21 @@
 
 import { useState } from "react";
 import type { RoomInfo } from "@/lib/availability";
-import { formatDateHuman, isValidDateStr } from "@/lib/dates";
+import {
+  dateTextParts,
+  datesToText,
+  formatDateHuman,
+  isValidDateStr,
+  parseDatesText,
+} from "@/lib/dates";
+import { MAX_NAME_LENGTH, MAX_NOTE_LENGTH } from "@/lib/validation";
+import type { AdminRequest } from "@/app/lib/requestTypes";
+import { editPayload } from "@/app/lib/requestTypes";
 import { roomLabel } from "@/app/lib/roomText";
 import { apiGet, apiSend } from "@/app/lib/apiClient";
 import { StatusPill } from "@/app/components/StatusPill";
-
-type AdminRequest = {
-  id: number;
-  name: string;
-  email: string | null;
-  roomId: number;
-  roomName: string;
-  status: "pending" | "confirmed" | "denied";
-  note: string | null;
-  cancelToken: string;
-  createdAt: string | Date;
-  updatedAt: string | Date;
-  dates: string[];
-};
-
-// Text <-> sorted date-list conversion for the edit form's textarea.
-function parseDates(raw: string): string[] {
-  return raw
-    .split(/[\s,]+/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .filter(isValidDateStr)
-    .sort();
-}
-
-function datesToText(dates: string[]): string {
-  return dates.join("\n");
-}
+import { Notice } from "@/app/components/Notice";
+import { Field, inputClass } from "@/app/components/Field";
 
 export function AdminRequests({
   initialRequests,
@@ -86,23 +69,12 @@ export function AdminRequests({
   }
 
   async function quickDecide(r: AdminRequest, status: "confirmed" | "denied") {
-    await patch(r.id, {
-      name: r.name,
-      email: r.email,
-      roomId: r.roomId,
-      status,
-      dates: r.dates,
-      note: r.note,
-    });
+    await patch(r.id, editPayload(r, status));
   }
 
   return (
     <div className="flex flex-col gap-4">
-      {error ? (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-400">
-          {error}
-        </p>
-      ) : null}
+      {error ? <Notice kind="error">{error}</Notice> : null}
       {requests.length === 0 ? (
         <p className="rounded-md border border-dashed border-edge p-6 text-center text-sm text-muted">
           No requests yet.
@@ -226,7 +198,7 @@ function EditForm({
   rooms: RoomInfo[];
   onSaved: () => Promise<void>;
   onCancel: () => void;
-  onError: (message: string) => void;
+  onError: (message: string | null) => void;
 }) {
   const [name, setName] = useState(request.name);
   const [email, setEmail] = useState(request.email ?? "");
@@ -236,19 +208,17 @@ function EditForm({
   const [datesText, setDatesText] = useState(datesToText(request.dates));
   const [saving, setSaving] = useState(false);
 
-  const dates = parseDates(datesText);
-  const invalid = datesText
-    .split(/[\s,]+/)
-    .filter((s) => s.trim().length > 0 && !isValidDateStr(s.trim()));
+  const dates = parseDatesText(datesText);
+  const invalid = dateTextParts(datesText).filter((s) => !isValidDateStr(s));
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
-    onError("");
+    onError(null);
     const res = await apiSend<unknown>(
       `/api/admin/requests/${request.id}`,
       "PATCH",
-      { name, email, roomId, status, note, dates },
+      editPayload({ name, email, roomId, note, dates }, status),
     );
     setSaving(false);
     if (!res.ok) {
@@ -265,31 +235,28 @@ function EditForm({
     >
       <p className="mb-3 font-medium">Edit request #{request.id}</p>
       <div className="grid gap-3 sm:grid-cols-2">
-        <label className="flex flex-col gap-1">
-          <span>Name</span>
+        <Field label="Name">
           <input
             required
             value={name}
             onChange={(e) => setName(e.target.value)}
-            maxLength={80}
-            className="rounded-md border border-edge bg-card px-3 py-2"
+            maxLength={MAX_NAME_LENGTH}
+            className={inputClass}
           />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span>Email</span>
+        </Field>
+        <Field label="Email">
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded-md border border-edge bg-card px-3 py-2"
+            className={inputClass}
           />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span>Room</span>
+        </Field>
+        <Field label="Room">
           <select
             value={roomId}
             onChange={(e) => setRoomId(Number(e.target.value))}
-            className="rounded-md border border-edge bg-card px-3 py-2"
+            className={inputClass}
           >
             {rooms.map((room) => (
               <option key={room.id} value={room.id}>
@@ -297,28 +264,26 @@ function EditForm({
               </option>
             ))}
           </select>
-        </label>
-        <label className="flex flex-col gap-1">
-          <span>Status</span>
+        </Field>
+        <Field label="Status">
           <select
             value={status}
             onChange={(e) =>
               setStatus(e.target.value as AdminRequest["status"])
             }
-            className="rounded-md border border-edge bg-card px-3 py-2"
+            className={inputClass}
           >
             <option value="pending">pending</option>
             <option value="confirmed">confirmed</option>
             <option value="denied">denied</option>
           </select>
-        </label>
-        <label className="flex flex-col gap-1 sm:col-span-2">
-          <span>Dates (YYYY-MM-DD, one per line or comma-separated)</span>
+        </Field>
+        <Field label="Dates (YYYY-MM-DD, one per line or comma-separated)" span>
           <textarea
             rows={4}
             value={datesText}
             onChange={(e) => setDatesText(e.target.value)}
-            className="rounded-md border border-edge bg-card px-3 py-2 font-mono text-xs"
+            className={`${inputClass} font-mono text-xs`}
           />
           {invalid.length > 0 ? (
             <span className="text-xs text-red-600 dark:text-red-400">
@@ -328,17 +293,16 @@ function EditForm({
           <span className="text-xs text-muted">
             {dates.length} valid date{dates.length === 1 ? "" : "s"}
           </span>
-        </label>
-        <label className="flex flex-col gap-1 sm:col-span-2">
-          <span>Note</span>
+        </Field>
+        <Field label="Note" span>
           <textarea
             rows={2}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            maxLength={500}
-            className="rounded-md border border-edge bg-card px-3 py-2"
+            maxLength={MAX_NOTE_LENGTH}
+            className={inputClass}
           />
-        </label>
+        </Field>
       </div>
       <div className="mt-4 flex gap-2">
         <button

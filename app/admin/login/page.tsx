@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
 import { apiSend } from "@/app/lib/apiClient";
+import { Notice } from "@/app/components/Notice";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -41,11 +42,7 @@ export default function AdminLoginPage() {
           placeholder="Admin password"
           className="rounded-md border border-edge bg-card px-3 py-2 text-sm"
         />
-        {error ? (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-400">
-            {error}
-          </p>
-        ) : null}
+        {error ? <Notice kind="error">{error}</Notice> : null}
         <button
           type="submit"
           disabled={loading}

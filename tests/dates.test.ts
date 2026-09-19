@@ -2,9 +2,12 @@ import { describe, expect, it } from "vitest";
 import {
   addDaysStr,
   dateRange,
+  dateTextParts,
+  datesToText,
   formatDateHuman,
   isValidDateStr,
   parseDate,
+  parseDatesText,
   sortUniqueDates,
   todayStr,
   toDateString,
@@ -88,5 +91,46 @@ describe("formatDateHuman", () => {
 describe("todayStr", () => {
   it("formats a known date", () => {
     expect(todayStr(new Date(2026, 8, 18))).toBe("2026-09-18");
+  });
+});
+
+describe("dateTextParts", () => {
+  it("splits on whitespace, commas, and newlines", () => {
+    expect(dateTextParts("2026-01-01\n2026-01-02, 2026-01-03")).toEqual([
+      "2026-01-01",
+      "2026-01-02",
+      "2026-01-03",
+    ]);
+  });
+
+  it("drops empty segments", () => {
+    expect(dateTextParts(" , 2026-01-01 ,\n")).toEqual(["2026-01-01"]);
+    expect(dateTextParts("")).toEqual([]);
+  });
+});
+
+describe("parseDatesText", () => {
+  it("returns the valid dates sorted", () => {
+    expect(
+      parseDatesText("2026-01-05, banana, 2026-01-02\n2026-01-31"),
+    ).toEqual(["2026-01-02", "2026-01-05", "2026-01-31"]);
+  });
+
+  it("keeps duplicates so the server can reject them explicitly", () => {
+    expect(parseDatesText("2026-01-01\n2026-01-01")).toEqual([
+      "2026-01-01",
+      "2026-01-01",
+    ]);
+  });
+
+  it("drops everything when nothing is valid", () => {
+    expect(parseDatesText("garbage in")).toEqual([]);
+  });
+});
+
+describe("datesToText", () => {
+  it("joins one date per line (roundtrip with parseDatesText)", () => {
+    const dates = ["2026-01-01", "2026-01-02"];
+    expect(parseDatesText(datesToText(dates))).toEqual(dates);
   });
 });

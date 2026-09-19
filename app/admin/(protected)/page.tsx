@@ -1,5 +1,6 @@
 import { AdminRequests } from "@/app/components/admin/AdminRequests";
 import { getRequestsAll, getRooms } from "@/lib/data";
+import { toPublicRequest } from "@/app/lib/requestTypes";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,10 @@ export default async function AdminPage() {
         Approve, deny, edit, or remove any request. The requester is emailed
         automatically if they left an address.
       </p>
-      <AdminRequests initialRequests={requests} rooms={rooms} />
+      <AdminRequests
+        initialRequests={requests.map(toPublicRequest)}
+        rooms={rooms}
+      />
     </main>
   );
 }
