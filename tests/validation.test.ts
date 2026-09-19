@@ -130,6 +130,36 @@ describe("createRequestSchema roomIds", () => {
   });
 });
 
+describe("email shape", () => {
+  const withEmail = (email: string) =>
+    createRequestSchema.safeParse({
+      name: "Josh",
+      email,
+      roomIds: [1],
+      dates: [FUTURE],
+    });
+
+  it("accepts ordinary and dotted-domain addresses", () => {
+    expect(withEmail("josh@example.com").success).toBe(true);
+    expect(withEmail("a.b@sub.example.co.uk").success).toBe(true);
+    expect(withEmail("a..b@example.com").success).toBe(true);
+  });
+
+  it("rejects missing or empty parts around the @", () => {
+    expect(withEmail("@example.com").success).toBe(false);
+    expect(withEmail("josh@").success).toBe(false);
+    expect(withEmail("josh@example").success).toBe(false);
+    expect(withEmail("josh@.example").success).toBe(false);
+    expect(withEmail("josh@example.").success).toBe(false);
+  });
+
+  it("rejects whitespace and extra @", () => {
+    expect(withEmail("josh smith@example.com").success).toBe(false);
+    expect(withEmail("josh@example .com").success).toBe(false);
+    expect(withEmail("josh@example@com.net").success).toBe(false);
+  });
+});
+
 describe("requestEditSchema", () => {
   it("accepts full admin edit", () => {
     const parsed = requestEditSchema.safeParse({
