@@ -88,15 +88,23 @@ export function countBookableDates(
   }).length;
 }
 
-export type RoomDateStatus = "free" | "requested" | "partial" | "full" | "idle";
+export type RoomDateStatus =
+  | "free"
+  | "booked"
+  | "requested"
+  | "partial"
+  | "full"
+  | "idle";
 
 // Marker state for ONE room across the selected dates, using the same
 // priority as the calendar (full > booked > requested):
 // - "full": some selected date has no free bed in this room
+// - "booked": every selected date still has a free bed, but a confirmed
+//   booking touches this room (partially taken)
 // - "requested": every selected date still has a free bed, and a pending
 //   request (with no confirmed booking yet) touches this room
 // - "partial": some but not all selected dates are bookable
-// - "free": every selected date has a free bed and nothing is pending
+// - "free": every selected date has a free bed and nothing touches it
 // - "idle": no dates selected, so there is nothing to mark
 export function roomDateStatus(
   avail: AvailabilityMap,
@@ -116,7 +124,7 @@ export function roomDateStatus(
   }
   if (bookable === 0) return "full";
   if (bookable < dates.length) return "partial";
-  if (confirmed) return "free"; // booked but beds remain — same as "booked"
+  if (confirmed) return "booked";
   if (pending) return "requested";
   return "free";
 }

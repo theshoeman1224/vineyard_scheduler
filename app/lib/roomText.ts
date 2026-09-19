@@ -31,10 +31,11 @@ export function roomsSelectedHint(
 }
 
 // Dot color for a room across the selected dates, matching the calendar
-// legend: green = free, amber = requested or partially bookable, gray =
-// no free beds, or nothing selected yet.
+// legend: green = free, red = booked (beds still remain), amber =
+// requested or partially bookable, gray = no free beds / nothing selected.
 export function availabilityDotClass(status: RoomDateStatus): string {
   if (status === "free") return "bg-green-500";
+  if (status === "booked") return "bg-red-600";
   if (status === "requested" || status === "partial") return "bg-amber-400";
   return "bg-neutral-300 dark:bg-neutral-600";
 }
@@ -42,6 +43,7 @@ export function availabilityDotClass(status: RoomDateStatus): string {
 // Hotspot background on the blueprint for the same states.
 export function hotspotClass(status: RoomDateStatus): string {
   if (status === "free") return "bg-green-500/50";
+  if (status === "booked") return "bg-red-500/50";
   if (status === "requested" || status === "partial") return "bg-amber-400/50";
   if (status === "full") return "bg-neutral-400/50";
   return "bg-neutral-800/40"; // idle

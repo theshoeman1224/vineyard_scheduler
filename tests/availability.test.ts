@@ -114,13 +114,13 @@ describe("roomDateStatus", () => {
     expect(roomDateStatus(avail, 1, ["2026-01-01", "2026-01-02"])).toBe("free");
   });
 
-  it("stays free when a confirmed booking leaves beds free (booked)", () => {
+  it("is booked when a confirmed booking leaves beds free", () => {
     const avail = computeAvailability(
       rooms,
       [{ roomId: 1, status: "confirmed", dates: ["2026-01-01"] }],
       ["2026-01-01"],
     );
-    expect(roomDateStatus(avail, 1, ["2026-01-01"])).toBe("free");
+    expect(roomDateStatus(avail, 1, ["2026-01-01"])).toBe("booked");
   });
 
   it("is requested when only a pending request touches the room", () => {
