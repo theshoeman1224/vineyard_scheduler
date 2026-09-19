@@ -46,8 +46,18 @@ export function dateRange(start: string, endInclusive: string): string[] {
   return out;
 }
 
+// Byte-wise comparator for 'YYYY-MM-DD' strings. Deliberately NOT
+// localeCompare: fixed-width zero-padded ISO dates sort identically by
+// byte comparison in every environment, while collations may treat the
+// hyphen as variable-weight punctuation and reorder them.
+export function compareDateStr(a: string, b: string): number {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+
 export function sortUniqueDates(dates: string[]): string[] {
-  return [...new Set(dates)].sort();
+  return [...new Set(dates)].sort(compareDateStr);
 }
 
 // Splits whitespace- or comma-separated text into candidate date strings.
@@ -61,7 +71,7 @@ export function dateTextParts(raw: string): string[] {
 // Parses a dates textarea (one per line or comma-separated) into a
 // sorted list, silently dropping entries that are not valid dates.
 export function parseDatesText(raw: string): string[] {
-  return dateTextParts(raw).filter(isValidDateStr).sort();
+  return dateTextParts(raw).filter(isValidDateStr).sort(compareDateStr);
 }
 
 // Inverse of parseDatesText for rendering a textarea.
