@@ -6,7 +6,6 @@ import {
   baseRequestQuery,
   attachDates,
   type RequestWithDetails,
-  type Tx,
 } from "./shared";
 import { capacityConflicts, firstFullDate } from "./capacity";
 
@@ -83,13 +82,13 @@ export async function createRequest(
     const cancelToken = randomToken();
     const ids: number[] = [];
     const dateRows: { requestId: number; date: string }[] = [];
-    for (let i = 0; i < input.roomIds.length; i++) {
+    for (const roomId of input.roomIds) {
       const inserted = await tx
         .insert(requests)
         .values({
           name: input.name,
           email: input.email,
-          roomId: input.roomIds[i],
+          roomId,
           note: input.note,
           cancelToken,
           groupId,
@@ -268,6 +267,3 @@ export async function cancelByToken(token: string): Promise<boolean> {
   await db.delete(requests).where(eq(requests.groupId, anchor.groupId));
   return true;
 }
-
-// Re-exported so single-source-of-truth stays with the domain module.
-export type { Tx };

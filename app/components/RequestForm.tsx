@@ -57,7 +57,7 @@ export function RequestForm({
       setName("");
       setEmail("");
       setNote("");
-      for (const id of [...roomIds]) onRoomChange(id);
+      for (const id of roomIds) onRoomChange(id);
       onClearDates();
     } finally {
       setSubmitting(false);

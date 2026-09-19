@@ -2,7 +2,9 @@ import type { RequestWithDetails } from "@/lib/data";
 
 // Shape of a request row as exposed to the client by GET /api/requests:
 // no cancelToken or groupId (those stay server-side), createdAt as an
-// ISO string (JSON has no Date type).
+// ISO string (JSON has no Date type). The admin table works on the same
+// rows as the public site; the admin API adds nothing the table needs.
+// One type, so the two tables can never drift.
 export type RequestPublic = {
   id: number;
   name: string;
@@ -14,11 +16,6 @@ export type RequestPublic = {
   createdAt: string;
   dates: string[];
 };
-
-// The admin table works on the same rows as the public site; the admin
-// API adds nothing the table needs. One type, so the two tables can
-// never drift.
-export type AdminRequest = RequestPublic;
 
 // Maps a full request row to the public shape. Used by both the home
 // page and the admin page so the field list lives in exactly one place.
@@ -46,7 +43,7 @@ export function editPayload(
     note: string | null;
     dates: string[];
   },
-  status: AdminRequest["status"],
+  status: RequestPublic["status"],
 ) {
   return {
     name: fields.name,

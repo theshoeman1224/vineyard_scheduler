@@ -10,7 +10,7 @@ import {
   parseDatesText,
 } from "@/lib/dates";
 import { MAX_NAME_LENGTH, MAX_NOTE_LENGTH } from "@/lib/validation";
-import type { AdminRequest } from "@/app/lib/requestTypes";
+import type { RequestPublic } from "@/app/lib/requestTypes";
 import { editPayload } from "@/app/lib/requestTypes";
 import { roomLabel } from "@/app/lib/roomText";
 import { apiGet, apiSend } from "@/app/lib/apiClient";
@@ -22,7 +22,7 @@ export function AdminRequests({
   initialRequests,
   rooms,
 }: {
-  readonly initialRequests: AdminRequest[];
+  readonly initialRequests: RequestPublic[];
   readonly rooms: RoomInfo[];
 }) {
   const [requests, setRequests] = useState(initialRequests);
@@ -33,7 +33,7 @@ export function AdminRequests({
   // Refetches the public requests list. Failures keep the stale table; a
   // banner would be noise for a background refresh.
   async function reload() {
-    const res = await apiGet<{ requests?: AdminRequest[] }>("/api/requests");
+    const res = await apiGet<{ requests?: RequestPublic[] }>("/api/requests");
     if (res.ok) {
       setRequests(res.data.requests ?? []);
     }
@@ -68,7 +68,7 @@ export function AdminRequests({
     await reload();
   }
 
-  async function quickDecide(r: AdminRequest, status: "confirmed" | "denied") {
+  async function quickDecide(r: RequestPublic, status: "confirmed" | "denied") {
     await patch(r.id, editPayload(r, status));
   }
 
@@ -194,7 +194,7 @@ function EditForm({
   onCancel,
   onError,
 }: {
-  readonly request: AdminRequest;
+  readonly request: RequestPublic;
   readonly rooms: RoomInfo[];
   readonly onSaved: () => Promise<void>;
   readonly onCancel: () => void;
@@ -269,7 +269,7 @@ function EditForm({
           <select
             value={status}
             onChange={(e) =>
-              setStatus(e.target.value as AdminRequest["status"])
+              setStatus(e.target.value as RequestPublic["status"])
             }
             className={inputClass}
           >
