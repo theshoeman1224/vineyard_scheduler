@@ -62,8 +62,3 @@ export function formatDateHuman(s: string): string {
   return `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 }
 
-export function formatDateShort(s: string): string {
-  if (!isValidDateStr(s)) return s;
-  const d = parseDate(s);
-  return `${MONTHS[d.getMonth()]} ${d.getDate()}`;
-}

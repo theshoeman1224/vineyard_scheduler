@@ -66,19 +66,6 @@ export function computeAvailability(
   return avail;
 }
 
-// Is at least one bed free for `roomId` on EVERY date in `dates`?
-export function roomHasAvailability(
-  avail: AvailabilityMap,
-  roomId: number,
-  dates: string[],
-): boolean {
-  if (dates.length === 0) return false;
-  return dates.every((date) => {
-    const slot = avail[date]?.[roomId];
-    return !!slot && slot.free > 0;
-  });
-}
-
 // How many of the requested dates have at least one free bed.
 export function countBookableDates(
   avail: AvailabilityMap,

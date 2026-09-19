@@ -3,7 +3,6 @@ import {
   asc,
   eq,
   inArray,
-  ne,
   sql,
 } from "drizzle-orm";
 import { getDb } from "@/db";
@@ -50,11 +49,6 @@ export async function getRooms(): Promise<RoomInfo[]> {
     hotspotW: r.hotspotW,
     hotspotH: r.hotspotH,
   }));
-}
-
-export async function getRoomById(id: number): Promise<RoomInfo | null> {
-  const all = await getRooms();
-  return all.find((r) => r.id === id) ?? null;
 }
 
 // Returns bookings (pending/confirmed) that touch any of the given dates.
@@ -112,14 +106,6 @@ export async function getAvailabilityRange(
   const roomList = await getRooms();
   const dates = dateRange(start, end);
   if (dates.length === 0) return {};
-  const bookings = await getBookingsForDates(dates);
-  return availabilityFromBookings(roomList, bookings, dates);
-}
-
-export async function getAvailabilityForDates(
-  dates: string[],
-): Promise<AvailabilityMap> {
-  const roomList = await getRooms();
   const bookings = await getBookingsForDates(dates);
   return availabilityFromBookings(roomList, bookings, dates);
 }
@@ -567,24 +553,5 @@ export async function saveBlueprint(mimeType: string, dataBase64: string) {
       target: blueprint.id,
       set: { mimeType, dataBase64, updatedAt: new Date() },
     });
-}
-
-export async function countRequestsInDateStatuses(
-  roomId: number,
-  status: RequestStatus,
-  excludeRequestId: number,
-): Promise<number> {
-  const db = getDb();
-  const rows = await db
-    .select({ id: requests.id })
-    .from(requests)
-    .where(
-      and(
-        eq(requests.roomId, roomId),
-        eq(requests.status, status),
-        ne(requests.id, excludeRequestId),
-      ),
-    );
-  return rows.length;
 }
 

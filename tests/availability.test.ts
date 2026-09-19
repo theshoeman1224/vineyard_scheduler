@@ -3,7 +3,6 @@ import {
   computeAvailability,
   countBookableDates,
   dayStatuses,
-  roomHasAvailability,
 } from "@/lib/availability";
 
 const rooms = [
@@ -84,29 +83,6 @@ describe("computeAvailability", () => {
     );
     expect(avail["2026-01-01"][99]).toBeUndefined();
     expect(avail["2026-01-01"][1].free).toBe(2);
-  });
-});
-
-describe("roomHasAvailability", () => {
-  const avail = computeAvailability(
-    rooms,
-    [
-      { roomId: 1, status: "confirmed", dates: ["2026-01-02"] },
-      { roomId: 2, status: "confirmed", dates: ["2026-01-01", "2026-01-02"] },
-    ],
-    ["2026-01-01", "2026-01-02", "2026-01-03"],
-  );
-
-  it("true when free on all dates", () => {
-    expect(roomHasAvailability(avail, 1, ["2026-01-01", "2026-01-02", "2026-01-03"])).toBe(true);
-  });
-
-  it("false when a date is full", () => {
-    expect(roomHasAvailability(avail, 2, ["2026-01-01"])).toBe(false);
-  });
-
-  it("false with no dates", () => {
-    expect(roomHasAvailability(avail, 1, [])).toBe(false);
   });
 });
 
