@@ -1,7 +1,10 @@
 "use client";
 
 import type { AvailabilityMap, RoomInfo } from "@/lib/availability";
-import { countBookableDates } from "@/lib/availability";
+import {
+  countBookableDates,
+  roomDateStatus,
+} from "@/lib/availability";
 import {
   availabilityDotClass,
   bedsLabel,
@@ -40,9 +43,11 @@ export function RoomList({
             room.id,
             selectedDates,
           );
-          const fullyAvailable =
-            selectedDates.length > 0 && bookable === selectedDates.length;
-          const partial = bookable > 0 && bookable < selectedDates.length;
+          const status = roomDateStatus(
+            availability,
+            room.id,
+            selectedDates,
+          );
           const isSelected = selectedRoomIds.includes(room.id);
           return (
             <li key={room.id}>
@@ -57,7 +62,7 @@ export function RoomList({
               >
                 <span className="flex items-center gap-2">
                   <span
-                    className={`inline-block h-2.5 w-2.5 rounded-full ${availabilityDotClass(fullyAvailable, partial)}`}
+                    className={`inline-block h-2.5 w-2.5 rounded-full ${availabilityDotClass(status)}`}
                   />
                   <span className="font-medium">{room.name}</span>
                   {isSelected ? (

@@ -88,6 +88,39 @@ export function countBookableDates(
   }).length;
 }
 
+export type RoomDateStatus = "free" | "requested" | "partial" | "full" | "idle";
+
+// Marker state for ONE room across the selected dates, using the same
+// priority as the calendar (full > booked > requested):
+// - "full": some selected date has no free bed in this room
+// - "requested": every selected date still has a free bed, and a pending
+//   request (with no confirmed booking yet) touches this room
+// - "partial": some but not all selected dates are bookable
+// - "free": every selected date has a free bed and nothing is pending
+// - "idle": no dates selected, so there is nothing to mark
+export function roomDateStatus(
+  avail: AvailabilityMap,
+  roomId: number,
+  dates: string[],
+): RoomDateStatus {
+  if (dates.length === 0) return "idle";
+  let bookable = 0;
+  let confirmed = false;
+  let pending = false;
+  for (const date of dates) {
+    const slot = avail[date]?.[roomId];
+    if (!slot) continue;
+    if (slot.free > 0) bookable += 1;
+    if (slot.confirmed > 0) confirmed = true;
+    if (slot.pending > 0) pending = true;
+  }
+  if (bookable === 0) return "full";
+  if (bookable < dates.length) return "partial";
+  if (confirmed) return "free"; // booked but beds remain — same as "booked"
+  if (pending) return "requested";
+  return "free";
+}
+
 export type DayStatus = "booked" | "full" | "requested";
 
 // Calendar-day status for a SET of rooms (the user's selection).

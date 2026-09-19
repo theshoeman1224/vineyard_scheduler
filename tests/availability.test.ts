@@ -3,6 +3,7 @@ import {
   computeAvailability,
   countBookableDates,
   dayStatuses,
+  roomDateStatus,
 } from "@/lib/availability";
 
 const rooms = [
@@ -95,6 +96,85 @@ describe("countBookableDates", () => {
     );
     expect(countBookableDates(avail, 2, ["2026-01-01", "2026-01-02"])).toBe(1);
     expect(countBookableDates(avail, 1, ["2026-01-01", "2026-01-02"])).toBe(2);
+  });
+});
+
+describe("roomDateStatus", () => {
+  it("is idle with no dates selected", () => {
+    const avail = computeAvailability(
+      rooms,
+      [{ roomId: 1, status: "pending", dates: ["2026-01-01"] }],
+      ["2026-01-01"],
+    );
+    expect(roomDateStatus(avail, 1, [])).toBe("idle");
+  });
+
+  it("is free when every selected date has a free bed", () => {
+    const avail = computeAvailability(rooms, [], ["2026-01-01", "2026-01-02"]);
+    expect(roomDateStatus(avail, 1, ["2026-01-01", "2026-01-02"])).toBe("free");
+  });
+
+  it("stays free when a confirmed booking leaves beds free (booked)", () => {
+    const avail = computeAvailability(
+      rooms,
+      [{ roomId: 1, status: "confirmed", dates: ["2026-01-01"] }],
+      ["2026-01-01"],
+    );
+    expect(roomDateStatus(avail, 1, ["2026-01-01"])).toBe("free");
+  });
+
+  it("is requested when only a pending request touches the room", () => {
+    const avail = computeAvailability(
+      rooms,
+      [{ roomId: 2, status: "pending", dates: ["2026-01-01"] }],
+      ["2026-01-01"],
+    );
+    expect(roomDateStatus(avail, 2, ["2026-01-01"])).toBe("requested");
+  });
+
+  it("is full when no selected date has a free bed", () => {
+    const avail = computeAvailability(
+      rooms,
+      [
+        { roomId: 2, status: "confirmed", dates: ["2026-01-01"] },
+        { roomId: 2, status: "confirmed", dates: ["2026-01-02"] },
+      ],
+      ["2026-01-01", "2026-01-02"],
+    );
+    expect(roomDateStatus(avail, 2, ["2026-01-01", "2026-01-02"])).toBe("full");
+  });
+
+  it("is partial when only some selected dates are bookable", () => {
+    const avail = computeAvailability(
+      rooms,
+      [{ roomId: 1, status: "confirmed", dates: ["2026-01-01"] },
+       { roomId: 1, status: "confirmed", dates: ["2026-01-01"] }],
+      ["2026-01-01", "2026-01-02"],
+    );
+    expect(roomDateStatus(avail, 1, ["2026-01-01", "2026-01-02"])).toBe("partial");
+  });
+
+  it("a pending request in another room does not affect this room", () => {
+    const avail = computeAvailability(
+      rooms,
+      [{ roomId: 2, status: "pending", dates: ["2026-01-01"] }],
+      ["2026-01-01"],
+    );
+    expect(roomDateStatus(avail, 1, ["2026-01-01"])).toBe("free");
+  });
+
+  it("prefers full over requested in the same room", () => {
+    // Bunk Room: 1 confirmed (2/2 = full) AND a pending request
+    const avail = computeAvailability(
+      rooms,
+      [
+        { roomId: 1, status: "confirmed", dates: ["2026-01-01"] },
+        { roomId: 1, status: "confirmed", dates: ["2026-01-01"] },
+        { roomId: 1, status: "pending", dates: ["2026-01-01"] },
+      ],
+      ["2026-01-01"],
+    );
+    expect(roomDateStatus(avail, 1, ["2026-01-01"])).toBe("full");
   });
 });
 
