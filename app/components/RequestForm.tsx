@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { RoomInfo } from "@/lib/availability";
 import { formatDateHuman } from "@/lib/dates";
 import { MAX_NAME_LENGTH, MAX_NOTE_LENGTH } from "@/lib/validation";
-import { roomLabel } from "@/app/lib/roomText";
+import { detailsHint, roomLabel } from "@/app/lib/roomText";
 import { apiSend } from "@/app/lib/apiClient";
 import { Field, inputClass } from "@/app/components/Field";
 
@@ -35,13 +35,15 @@ export function RequestForm({
   }
 
   const selectedRooms = rooms.filter((r) => roomIds.includes(r.id));
+  // The form stays mounted at all times (mounting it on date selection
+  // shifted the whole panel); it only accepts input once steps 1 and 2
+  // are both done.
+  const ready = selectedDates.length > 0 && roomIds.length > 0;
+  const controlClass = `${inputClass} disabled:cursor-not-allowed disabled:opacity-50`;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (roomIds.length === 0) {
-      onError("Pick at least one room first (from the list or blueprint).");
-      return;
-    }
+    if (!ready) return;
     setSubmitting(true);
     try {
       const res = await apiSend<{ ok: boolean; cancelUrl: string }>(
@@ -74,14 +76,12 @@ export function RequestForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 text-sm">
       <div>
-        <p className="mb-1 font-medium">3. Your details</p>
-        {selectedRooms.length === 0 ? (
-          <p className="text-muted">
-            No room selected yet — click one or more rooms above (large
-            parties can combine rooms).
-          </p>
-        ) : (
-          <div className="text-muted">
+        <h3 className="mb-3 text-lg font-semibold">3. Your details</h3>
+        {/* min-h reserves room for the tallest stable content (one chip
+            row + summary), so the fields below never shift as hints and
+            chips swap while steps 1 and 2 are completed. */}
+        <div className="min-h-12">
+          {selectedRooms.length > 0 ? (
             <div className="mb-1 flex flex-wrap gap-1.5">
               {selectedRooms.map((room) => (
                 <button
@@ -95,21 +95,28 @@ export function RequestForm({
                 </button>
               ))}
             </div>
+          ) : null}
+          {ready ? (
             <span className="text-muted">
               {selectedDates.length} night{selectedDates.length === 1 ? "" : "s"}
               : {selectedDates.map((d) => formatDateHuman(d)).join(", ")}
             </span>
-          </div>
-        )}
+          ) : (
+            <p className="text-muted">
+              {detailsHint(selectedDates.length > 0, selectedRooms.length > 0)}
+            </p>
+          )}
+        </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Your name">
           <input
             required
+            disabled={!ready}
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={MAX_NAME_LENGTH}
-            className={inputClass}
+            className={controlClass}
             placeholder="e.g. Josh"
           />
         </Field>
@@ -122,27 +129,29 @@ export function RequestForm({
         >
           <input
             type="email"
+            disabled={!ready}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className={inputClass}
+            className={controlClass}
             placeholder="you@example.com"
           />
         </Field>
       </div>
       <Field label="Note (optional)">
         <textarea
+          disabled={!ready}
           value={note}
           onChange={(e) => setNote(e.target.value)}
           maxLength={MAX_NOTE_LENGTH}
           rows={2}
-          className={inputClass}
+          className={controlClass}
           placeholder="Anything the admin should know"
         />
       </Field>
       <button
         type="submit"
-        disabled={submitting}
-        className="w-fit rounded-md bg-invert px-4 py-2 font-medium text-invert-fg hover:opacity-85 disabled:opacity-50"
+        disabled={submitting || !ready}
+        className="w-fit rounded-md bg-invert px-4 py-2 font-medium text-invert-fg hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {submitLabel}
       </button>

@@ -66,22 +66,19 @@ export function Scheduler({
     [refresh],
   );
 
-  const requestFormNode =
-    selectedDates.length === 0 ? (
-      <p className="text-sm text-muted">
-        Pick one or more dates on the calendar to start a request.
-      </p>
-    ) : (
-      <RequestForm
-        rooms={rooms}
-        selectedDates={selectedDates}
-        roomIds={roomIds}
-        onRoomChange={toggleRoom}
-        onSuccess={onSubmitSuccess}
-        onError={setSubmitError}
-        onClearDates={() => onDatesChange([])}
-      />
-    );
+  // The form is always mounted (mounting it on first date pick shifted
+  // the whole panel); RequestForm gates its own inputs on steps 1 and 2.
+  const requestFormNode = (
+    <RequestForm
+      rooms={rooms}
+      selectedDates={selectedDates}
+      roomIds={roomIds}
+      onRoomChange={toggleRoom}
+      onSuccess={onSubmitSuccess}
+      onError={setSubmitError}
+      onClearDates={() => onDatesChange([])}
+    />
+  );
 
   return (
     <div className="flex flex-col gap-8">

@@ -61,11 +61,16 @@ export function RoomList({
                 }`}
               >
                 <span className="flex items-center gap-2">
-                  {status === "idle" ? null : (
-                    <span
-                      className={`inline-block h-2.5 w-2.5 rounded-full ${availabilityDotClass(status)}`}
-                    />
-                  )}
+                  {/* The slot always renders (invisible while idle) so
+                      room names never shift when dots appear. */}
+                  <span
+                    aria-hidden
+                    className={`inline-block h-2.5 w-2.5 shrink-0 rounded-full ${
+                      status === "idle"
+                        ? "invisible"
+                        : availabilityDotClass(status)
+                    }`}
+                  />
                   <span className="font-medium">{room.name}</span>
                   {isSelected ? (
                     <span className="rounded-full bg-invert-fg/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
