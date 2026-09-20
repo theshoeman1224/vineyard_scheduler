@@ -88,6 +88,13 @@ Secrets are never stored in the repo.
   only overwritten. Each `secret put` publishes a new worker version
   immediately — no redeploy needed.
 
+- **Email (Resend)** — for a guided walkthrough (Resend account, domain
+  verification, API key, storing on the worker, live verification) run:
+
+  ```bash
+  ./scripts/setup-resend.sh
+  ```
+
 ## Deploying
 
 1. Create a **Postgres** database (e.g. Neon) → copy the pooled connection
