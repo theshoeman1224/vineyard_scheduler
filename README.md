@@ -110,6 +110,15 @@ Secrets are never stored in the repo.
 
 ## Deploying
 
+**CI/CD**: every push to `main` runs the four gates (test, typecheck, lint,
+build) and then deploys to Cloudflare Workers automatically
+(`.github/workflows/deploy.yml`). It needs two repo secrets:
+`CLOUDFLARE_API_TOKEN` (a Cloudflare token with **Workers Scripts: Edit**
+for this account) and `CLOUDFLARE_ACCOUNT_ID`. Manual deploys still work
+from a machine with `wrangler` logged in.
+
+First-time setup:
+
 1. Create a **Postgres** database (e.g. Neon) → copy the pooled connection
    string into `DATABASE_URL`.
 2. Create a **Resend** account → verify your sending domain → create an API key.
