@@ -17,10 +17,17 @@ export async function sendEmail(
       html: msg.html,
       text: msg.text,
     });
-    if (res.error) return { ok: false, error: res.error.message };
+    if (res.error) {
+      // Callers mostly ignore the error field; log it so Cloudflare's
+      // observability (`wrangler tail`) shows why an email never arrived.
+      console.error(`[mailer] send to ${to} failed: ${res.error.message}`);
+      return { ok: false, error: res.error.message };
+    }
     return { ok: true };
   } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+    const message = e instanceof Error ? e.message : String(e);
+    console.error(`[mailer] send to ${to} threw: ${message}`);
+    return { ok: false, error: message };
   }
 }
 
