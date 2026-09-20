@@ -36,6 +36,19 @@ in that email, or manages everything in a password-protected admin panel.
 Next.js (App Router) · TypeScript · Tailwind · Postgres (Neon) with
 Drizzle ORM · Resend for email · Vitest for unit tests.
 
+## Services
+
+Three hosted services back the app. Each one has a single job:
+
+| Service | What it does here |
+| --- | --- |
+| **Cloudflare Workers** | Hosts the site (custom domain `beachroad.casa`). The Next.js app is packaged for Workers with `opennextjs-cloudflare`: `npm run deploy` builds and publishes, `npm run preview` runs the worker locally. Production secrets live on the worker, managed with `wrangler secret put` (see *Managing secrets*). |
+| **Neon** | Managed Postgres and the app's only data store: rooms, requests, requested dates, and the uploaded blueprint image. The app connects with the pooled connection string from `DATABASE_URL` and queries it through Drizzle ORM (`npm run db:push` applies schema changes). The repo vendors a `pg-cloudflare` shim so the `pg` driver can reach Postgres over WebSockets from inside a Worker. |
+| **Resend** | Transactional email. It sends every message the app produces: the admin notification with signed Approve/Deny links, decision and edit notices to requesters, and withdrawal confirmations. Email is optional: with no `RESEND_API_KEY` the site works normally and only email is skipped (`emailQueued: false`). |
+
+Everything else (calendar, availability math, admin panel) runs entirely in
+the app itself with no service dependency.
+
 ## Local development
 
 ```bash
