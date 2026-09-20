@@ -7,6 +7,7 @@ import {
   COLOR_AMBER,
   COLOR_GREEN,
   COLOR_RED,
+  esc,
   roomSummaryList,
   tokenPage,
 } from "@/app/lib/tokenPage";
@@ -59,14 +60,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ token: string 
   const verb = payload.a === "approve" ? "approved" : "denied";
   let body = "";
   if (succeeded.length > 0) {
-    const approvedRooms = succeeded.map((r) => r.roomName).join("<br/>");
+    const approvedRooms = succeeded.map((r) => esc(r.roomName)).join("<br/>");
     const approvedHeading = `${succeeded.length} room${succeeded.length === 1 ? "" : "s"} ${verb}`;
     body += `<p style="color:${COLOR_GREEN}"><strong>${approvedHeading}:</strong></p>
       <p>${approvedRooms}</p>`;
   }
   if (failed.length > 0) {
     const failedList = failed
-      .map((f) => `<strong>${f.roomName}</strong> &mdash; ${f.error}`)
+      .map((f) => `<strong>${esc(f.roomName)}</strong> &mdash; ${esc(f.error ?? "")}`)
       .join("<br/>");
     body += `<p style="color:${COLOR_RED}"><strong>Could not be ${verb}:</strong></p>
       <p>${failedList}</p>
@@ -103,7 +104,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ token: string 
   if (group.length === 0) return NOT_FOUND_PAGE();
 
   const verb = payload.a === "approve" ? "approve" : "deny";
-  const name = group[0].name;
+  const name = esc(group[0].name);
   return tokenPage(`Confirm: ${verb} request`, `
 <p><strong>${name}</strong> &rarr;</p>
 <p>${roomSummaryList(group)}</p>

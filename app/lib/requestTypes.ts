@@ -17,13 +17,19 @@ export type RequestPublic = {
   dates: string[];
 };
 
-// Maps a full request row to the public shape. Used by both the home
-// page and the admin page so the field list lives in exactly one place.
-export function toPublicRequest(r: RequestWithDetails): RequestPublic {
+// Maps a full request row to the client shape. Emails are PII, so they are
+// stripped unless explicitly requested — only the admin page and the admin
+// API call this with `includeEmail` (guarded by the admin session).
+// Used by both the home page and the admin page so the field list lives in
+// exactly one place.
+export function toPublicRequest(
+  r: RequestWithDetails,
+  includeEmail = false,
+): RequestPublic {
   return {
     id: r.id,
     name: r.name,
-    email: r.email,
+    email: includeEmail ? r.email : null,
     roomId: r.roomId,
     roomName: r.roomName,
     status: r.status,

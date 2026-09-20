@@ -15,6 +15,18 @@ h1{font-size:22px}.card{border:1px solid #ddd;border-radius:8px;padding:20px;mar
 @media (prefers-color-scheme:dark){body{background:#131316;color:#e8e8ea}.card{border-color:#3a3a40}.back{color:#8ab4ff}}
 `;
 
+// Escapes a dynamic string for safe interpolation into HTML text and
+// attribute contexts. Every value that reaches a token page through a
+// user (name, note) or an admin (room name) must pass through this.
+export function esc(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // Shared accent colors for token-page headings and buttons.
 export const COLOR_GREEN = "#16a34a";
 export const COLOR_RED = "#dc2626";
@@ -28,10 +40,10 @@ export function tokenPage(
   headingColor?: string,
 ): Response {
   const heading = headingColor
-    ? `<h1 style="color:${headingColor}">${title}</h1>`
-    : `<h1>${title}</h1>`;
+    ? `<h1 style="color:${headingColor}">${esc(title)}</h1>`
+    : `<h1>${esc(title)}</h1>`;
   const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark">
-<title>${title}</title>
+<title>${esc(title)}</title>
 <style>${TOKEN_PAGE_CSS}</style>
 </head><body>${heading}<div class="card">${body}</div>
 <a class="back" href="/">&larr; Back to scheduler</a></body></html>`;
@@ -48,7 +60,7 @@ export function roomSummaryList(
   return reqs
     .map(
       (r) =>
-        `<strong>${r.roomName}</strong> (${r.status})<br/>${r.dates.map((d) => formatDateHuman(d)).join("<br/>")}`,
+        `<strong>${esc(r.roomName)}</strong> (${esc(r.status)})<br/>${r.dates.map((d) => formatDateHuman(d)).join("<br/>")}`,
     )
     .join("<br/><br/>");
 }

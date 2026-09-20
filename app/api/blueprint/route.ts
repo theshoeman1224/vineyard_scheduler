@@ -10,6 +10,9 @@ export async function GET() {
     headers: {
       "content-type": row.mimeType,
       "cache-control": "no-store",
+      // The stored type was sniffed at upload, but never let the browser
+      // reinterpret the bytes either.
+      "x-content-type-options": "nosniff",
     },
   });
 }

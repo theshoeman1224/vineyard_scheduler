@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin";
 import { getBlueprintRow, saveBlueprint } from "@/lib/data";
+import { sniffImageMime } from "@/lib/images";
 
 const MAX_BYTES = 3 * 1024 * 1024; // 3MB
-const ALLOWED = new Set(["image/png", "image/jpeg", "image/webp"]);
 
 export async function POST(req: Request) {
   const denied = await requireAdmin();
@@ -18,17 +18,18 @@ export async function POST(req: Request) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "Missing file" }, { status: 400 });
   }
-  if (!ALLOWED.has(file.type)) {
+  const bytes = Buffer.from(await file.arrayBuffer());
+  const mimeType = sniffImageMime(bytes);
+  if (!mimeType) {
     return NextResponse.json(
       { error: "File must be PNG, JPEG, or WebP" },
       { status: 400 },
     );
   }
-  const bytes = Buffer.from(await file.arrayBuffer());
   if (bytes.byteLength > MAX_BYTES) {
     return NextResponse.json({ error: "Image too large (max 3MB)" }, { status: 400 });
   }
-  await saveBlueprint(file.type, bytes.toString("base64"));
+  await saveBlueprint(mimeType, bytes.toString("base64"));
   return NextResponse.json({ ok: true });
 }
 

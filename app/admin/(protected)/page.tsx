@@ -14,7 +14,7 @@ export default async function AdminPage() {
         automatically if they left an address.
       </p>
       <AdminRequests
-        initialRequests={requests.map(toPublicRequest)}
+        initialRequests={requests.map((r) => toPublicRequest(r, true))}
         rooms={rooms}
       />
     </main>

@@ -6,24 +6,37 @@ import { adminNewRequestEmail } from "@/lib/emails";
 import { trySendEmail } from "@/lib/mailer";
 import { adminEmail, appUrl, signingSecret } from "@/lib/env";
 import { signDecideToken } from "@/lib/tokens";
+import { checkRateLimit, clientIp } from "@/lib/rateLimit";
+import { isAdmin } from "@/lib/admin";
+import { toPublicRequest } from "@/app/lib/requestTypes";
 
 export async function GET() {
   const all = await getRequestsAll();
-  const publicRows = all.map((r) => ({
-    id: r.id,
-    name: r.name,
-    email: r.email,
-    roomId: r.roomId,
-    roomName: r.roomName,
-    status: r.status,
-    note: r.note,
-    dates: r.dates,
-    createdAt: r.createdAt,
-  }));
-  return NextResponse.json({ requests: publicRows });
+  // Requester emails are PII — only signed-in admins receive them; the
+  // public table needs only name, room, status, and dates.
+  const includeEmail = await isAdmin();
+  return NextResponse.json({
+    requests: all.map((r) => toPublicRequest(r, includeEmail)),
+  });
 }
 
+// 5 submissions per 15 minutes per client IP — enough for a household
+// coordinating rooms, tight enough to blunt spam and Resend email abuse.
+const SUBMIT_LIMIT = 5;
+const SUBMIT_WINDOW_MS = 15 * 60 * 1000;
+
 export async function POST(req: Request) {
+  const limit = checkRateLimit(
+    `submit:${clientIp(req.headers)}`,
+    SUBMIT_LIMIT,
+    SUBMIT_WINDOW_MS,
+  );
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "Too many requests from this address — try again later" },
+      { status: 429, headers: { "retry-after": String(limit.retryAfterSeconds) } },
+    );
+  }
   let body: unknown;
   try {
     body = await req.json();

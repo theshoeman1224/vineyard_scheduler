@@ -19,7 +19,7 @@ export default async function Home() {
       <Scheduler
         initialRooms={rooms}
         initialAvailability={availability}
-        initialRequests={requests.map(toPublicRequest)}
+        initialRequests={requests.map((r) => toPublicRequest(r))}
       />
     </main>
   );

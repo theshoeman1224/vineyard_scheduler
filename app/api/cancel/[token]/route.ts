@@ -2,7 +2,7 @@ import { cancelByToken, getGroupByCancelToken } from "@/lib/data";
 import { requestCancelledByUserEmail } from "@/lib/emails";
 import { trySendEmail } from "@/lib/mailer";
 import { adminEmail, adminEmailIsConfigured } from "@/lib/env";
-import { COLOR_RED, roomSummaryList, tokenPage } from "@/app/lib/tokenPage";
+import { COLOR_RED, esc, roomSummaryList, tokenPage } from "@/app/lib/tokenPage";
 
 export async function GET(_req: Request, ctx: { params: Promise<{ token: string }> }) {
   const { token } = await ctx.params;
@@ -15,7 +15,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ token: string 
     );
   }
   return tokenPage("Withdraw request?", `
-<p><strong>#${group[0].id}</strong> &mdash; <strong>${group[0].name}</strong>. This removes <strong>all ${group.length === 1 ? "" : group.length + " "}</strong>room${group.length === 1 ? "" : "s"} of this submission:</p>
+<p><strong>#${group[0].id}</strong> &mdash; <strong>${esc(group[0].name)}</strong>. This removes <strong>all ${group.length === 1 ? "" : group.length + " "}</strong>room${group.length === 1 ? "" : "s"} of this submission:</p>
 <p>${roomSummaryList(group)}</p>
 <form method="POST" action="/api/cancel/${token}">
 <button class="btn bad" type="submit">Yes, withdraw it</button>
@@ -55,7 +55,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ token: string
 
   return tokenPage(
     "Request withdrawn",
-    `Your request for <strong>${group.map((r) => r.roomName).join(", ")}</strong> was removed. Submit a new one any time.`,
+    `Your request for <strong>${group.map((r) => esc(r.roomName)).join(", ")}</strong> was removed. Submit a new one any time.`,
     COLOR_RED,
   );
 }

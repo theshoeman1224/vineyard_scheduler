@@ -18,8 +18,13 @@ const row: RequestWithDetails = {
 };
 
 describe("toPublicRequest", () => {
+  it("strips the requester email unless explicitly included", () => {
+    expect(toPublicRequest(row).email).toBeNull();
+    expect(toPublicRequest(row, true).email).toBe("josh@example.com");
+  });
+
   it("maps the row to the public shape with an ISO createdAt", () => {
-    expect(toPublicRequest(row)).toEqual({
+    expect(toPublicRequest(row, true)).toEqual({
       id: 7,
       name: "Josh",
       email: "josh@example.com",

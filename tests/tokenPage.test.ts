@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { roomSummaryList, tokenPage } from "@/app/lib/tokenPage";
+import { esc, roomSummaryList, tokenPage } from "@/app/lib/tokenPage";
 
 async function text(res: Response): Promise<string> {
   return await res.text();
@@ -47,5 +47,33 @@ describe("roomSummaryList", () => {
 
   it("renders nothing for an empty group", () => {
     expect(roomSummaryList([])).toBe("");
+  });
+
+  it("escapes HTML in room names and statuses", () => {
+    const html = roomSummaryList([
+      {
+        roomName: '<img src=x onerror="alert(1)">',
+        status: "<script>alert(2)</script>",
+        dates: ["2026-01-01"],
+      },
+    ]);
+    expect(html).not.toContain("<img");
+    expect(html).not.toContain("<script>");
+    expect(html).toContain("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
+    expect(html).toContain("&lt;script&gt;");
+  });
+});
+
+describe("esc", () => {
+  it("escapes markup-significant characters", () => {
+    expect(esc(`<a href="x">&'</a>`)).toBe(
+      "&lt;a href=&quot;x&quot;&gt;&amp;&#39;&lt;/a&gt;",
+    );
+  });
+
+  it("escapes the page title into both <title> and <h1>", async () => {
+    const html = await text(tokenPage("<script>x</script>", ""));
+    expect(html).not.toContain("<script>x</script>");
+    expect(html).toContain("<title>&lt;script&gt;x&lt;/script&gt;</title>");
   });
 });
