@@ -1,0 +1,19 @@
+{
+  "name": "pg-cloudflare",
+  "version": "1.4.0",
+  "description": "A socket implementation that can run on Cloudflare Workers using native TCP connections.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "workerd": {
+        "import": "./esm/index.mjs",
+        "require": "./dist/index.js"
+      },
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "gitHead": "544b1ce8152bc280e398dc1e8a66920abe6a640e"
+}
