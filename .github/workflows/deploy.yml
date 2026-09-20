@@ -20,7 +20,11 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
+      # Lifecycle scripts are skipped so a compromised dependency cannot
+      # execute code at install time; every binary the build needs
+      # (esbuild, unrs-resolver, workerd) ships via optionalDependencies,
+      # so no postinstall step is required.
+      - run: npm ci --ignore-scripts
       - run: npm run test
       # Typecheck needs Next's generated route types (LayoutProps etc.),
       # which normally appear only after dev/build has run once.
