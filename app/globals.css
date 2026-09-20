@@ -49,8 +49,11 @@ body {
 .rdp-day_button {
   color: var(--fg);
 }
-.rdp-chevron {
-  fill: var(--muted);
+/* Month-switch chevrons follow the scheme like day text. Two classes so
+   the rule outranks the library's own .rdp-chevron fill (v10 wires the
+   chevron to --rdp-accent-color, which loses to nothing here otherwise). */
+.rdp-root .rdp-chevron {
+  fill: var(--fg);
 }
 .rdp-selected .rdp-day_button {
   background-color: transparent;
