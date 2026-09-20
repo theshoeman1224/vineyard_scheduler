@@ -32,16 +32,18 @@ export function CalendarCard({
   );
 
   const modifiers = useMemo(() => {
-    const bookedDays: Date[] = [];
+    const limitedDays: Date[] = [];
+    const limitedRequestedDays: Date[] = [];
     const requestedDays: Date[] = [];
     const fullDays: Date[] = [];
     for (const [date, status] of statusByDate) {
       const d = parseDate(date);
-      if (status === "booked") bookedDays.push(d);
+      if (status === "limited") limitedDays.push(d);
+      else if (status === "limited-requested") limitedRequestedDays.push(d);
       else if (status === "full") fullDays.push(d);
       else requestedDays.push(d);
     }
-    return { bookedDays, requestedDays, fullDays };
+    return { limitedDays, limitedRequestedDays, requestedDays, fullDays };
   }, [statusByDate]);
 
   const selected = useMemo(
@@ -55,17 +57,21 @@ export function CalendarCard({
     <section className="rounded-lg border border-edge bg-card p-4 shadow-sm">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-semibold">1. Pick dates</h2>
-        <div className="flex items-center gap-3 text-xs text-muted">
+        <div className="flex flex-wrap items-center justify-end gap-3 text-xs text-muted">
           <span className="flex items-center gap-1">
-            <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-600" />
-            <span>booked</span>
+            <span className="dot-limited inline-block h-2.5 w-2.5 rounded-full" />
+            <span>partly booked</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="dot-limited-amber inline-block h-2.5 w-2.5 rounded-full" />
+            <span>partly + requested</span>
           </span>
           <span className="flex items-center gap-1">
             <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" />
             <span>requested</span>
           </span>
           <span className="flex items-center gap-1">
-            <span className="inline-block h-2.5 w-2.5 rounded-full bg-neutral-300 dark:bg-neutral-600" />
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-600" />
             <span>full</span>
           </span>
         </div>
@@ -80,12 +86,15 @@ export function CalendarCard({
         }}
         disabled={{ before: today }}
         modifiers={{
-          booked: modifiers.bookedDays,
+          limited: [...modifiers.limitedDays, ...modifiers.limitedRequestedDays],
           full: modifiers.fullDays,
-          requested: modifiers.requestedDays,
+          requested: [
+            ...modifiers.requestedDays,
+            ...modifiers.limitedRequestedDays,
+          ],
         }}
         modifiersClassNames={{
-          booked: "rdp-day_booked",
+          limited: "rdp-day_limited",
           full: "rdp-day_full",
           requested: "rdp-day_requested",
         }}
@@ -100,7 +109,7 @@ export function CalendarCard({
               ? selectedRooms[0].name
               : `${selectedRooms.length} selected rooms`}
           </strong>{" "}
-          — booked days take priority over requested. Clear the room selection
+          — partly booked days take priority over requested. Clear the room selection
           to see all rooms.
         </p>
       ) : (

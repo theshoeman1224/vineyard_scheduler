@@ -61,9 +61,11 @@ export function RoomList({
                 }`}
               >
                 <span className="flex items-center gap-2">
-                  <span
-                    className={`inline-block h-2.5 w-2.5 rounded-full ${availabilityDotClass(status)}`}
-                  />
+                  {status === "idle" ? null : (
+                    <span
+                      className={`inline-block h-2.5 w-2.5 rounded-full ${availabilityDotClass(status)}`}
+                    />
+                  )}
                   <span className="font-medium">{room.name}</span>
                   {isSelected ? (
                     <span className="rounded-full bg-invert-fg/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">

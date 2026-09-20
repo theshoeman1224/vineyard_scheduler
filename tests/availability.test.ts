@@ -114,13 +114,25 @@ describe("roomDateStatus", () => {
     expect(roomDateStatus(avail, 1, ["2026-01-01", "2026-01-02"])).toBe("free");
   });
 
-  it("is booked when a confirmed booking leaves beds free", () => {
+  it("is limited when a confirmed booking leaves beds free", () => {
     const avail = computeAvailability(
       rooms,
       [{ roomId: 1, status: "confirmed", dates: ["2026-01-01"] }],
       ["2026-01-01"],
     );
-    expect(roomDateStatus(avail, 1, ["2026-01-01"])).toBe("booked");
+    expect(roomDateStatus(avail, 1, ["2026-01-01"])).toBe("limited");
+  });
+
+  it("is limited-requested when a pending request also touches the room", () => {
+    const avail = computeAvailability(
+      rooms,
+      [
+        { roomId: 1, status: "confirmed", dates: ["2026-01-01"] },
+        { roomId: 1, status: "pending", dates: ["2026-01-01"] },
+      ],
+      ["2026-01-01"],
+    );
+    expect(roomDateStatus(avail, 1, ["2026-01-01"])).toBe("limited-requested");
   });
 
   it("is requested when only a pending request touches the room", () => {
@@ -190,7 +202,7 @@ describe("dayStatuses", () => {
     expect(scoped.has("2026-01-02")).toBe(false);
   });
 
-  it("marks booked/full/requested for the selected room only", () => {
+  it("marks limited/full/requested for the selected room only", () => {
     const avail = computeAvailability(
       rooms,
       [
@@ -205,14 +217,27 @@ describe("dayStatuses", () => {
     expect(scoped.has("2026-01-03")).toBe(false);
   });
 
-  it("shows booked while beds remain for the selected room", () => {
+  it("shows limited while beds remain for the selected room", () => {
     const avail = computeAvailability(
       rooms,
       [{ roomId: 1, status: "confirmed", dates: ["2026-01-01"] }],
       ["2026-01-01"],
     );
     const scoped = dayStatuses(avail, rooms, [1]);
-    expect(scoped.get("2026-01-01")).toBe("booked"); // 1 of 2 beds taken
+    expect(scoped.get("2026-01-01")).toBe("limited"); // 1 of 2 beds taken
+  });
+
+  it("shows limited-requested when a pending request sits on a partly booked day", () => {
+    const avail = computeAvailability(
+      rooms,
+      [
+        { roomId: 1, status: "confirmed", dates: ["2026-01-01"] },
+        { roomId: 1, status: "pending", dates: ["2026-01-01"] },
+      ],
+      ["2026-01-01"],
+    );
+    const scoped = dayStatuses(avail, rooms, [1]);
+    expect(scoped.get("2026-01-01")).toBe("limited-requested");
   });
 
   it("marks requested-only days for the selected room", () => {
@@ -239,11 +264,11 @@ describe("dayStatuses", () => {
     );
     const overview = dayStatuses(avail, rooms, []);
     expect(overview.get("2026-01-01")).toBe("requested");
-    expect(overview.get("2026-01-02")).toBe("booked");
+    expect(overview.get("2026-01-02")).toBe("limited");
     expect(overview.get("2026-01-03")).toBe("full"); // Lounge 2/2 + Master 1/1
   });
 
-  it("prefers full over booked in the aggregate view", () => {
+  it("prefers limited over full in the aggregate view when beds remain", () => {
     // Bunk Room (2 beds) fully booked, Master still free with a pending request
     const avail = computeAvailability(
       rooms,
@@ -255,7 +280,7 @@ describe("dayStatuses", () => {
       ["2026-02-01"],
     );
     const overview = dayStatuses(avail, rooms, []);
-    expect(overview.get("2026-02-01")).toBe("booked"); // free beds remain (Master 1)
+    expect(overview.get("2026-02-01")).toBe("limited-requested"); // Bunk full (confirmed), Master pending, free beds remain
     const scopedLounge = dayStatuses(avail, rooms, [1]);
     expect(scopedLounge.get("2026-02-01")).toBe("full");
   });
@@ -265,8 +290,8 @@ describe("dayStatuses", () => {
     expect(overview.size).toBe(0);
   });
 
-  it("combines several selected rooms: booked wins over requested", () => {
-    // Lounge confirmed 1/2 (booked), Master only pending (requested)
+  it("combines several selected rooms: limited-requested wins over requested", () => {
+    // Lounge confirmed 1/2 (limited), Master only pending (requested)
     const avail = computeAvailability(
       rooms,
       [
@@ -276,7 +301,7 @@ describe("dayStatuses", () => {
       ["2026-03-01"],
     );
     const combined = dayStatuses(avail, rooms, [1, 2]);
-    expect(combined.get("2026-03-01")).toBe("booked");
+    expect(combined.get("2026-03-01")).toBe("limited-requested");
   });
 
   it("combines several selected rooms: full wins over everything", () => {

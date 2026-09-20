@@ -31,19 +31,25 @@ export function roomsSelectedHint(
 }
 
 // Dot color for a room across the selected dates, matching the calendar
-// legend: green = free, red = booked (beds still remain), amber =
-// requested or partially bookable, gray = no free beds / nothing selected.
+// legend: green = free, red ring = limited (booked but beds remain),
+// amber = requested or partially bookable, solid red = full. "idle" (no
+// dates selected) returns "" — the caller hides the dot, because an
+// unmeasured room must not read as a status (gray once meant "full").
 export function availabilityDotClass(status: RoomDateStatus): string {
   if (status === "free") return "bg-green-500";
-  if (status === "booked") return "bg-red-600";
+  if (status === "limited") return "dot-limited";
+  if (status === "limited-requested") return "dot-limited-amber";
   if (status === "requested" || status === "partial") return "bg-amber-400";
-  return "bg-neutral-300 dark:bg-neutral-600";
+  if (status === "full") return "bg-red-600";
+  return ""; // idle
 }
 
 // Hotspot background on the blueprint for the same states.
 export function hotspotClass(status: RoomDateStatus): string {
   if (status === "free") return "bg-green-500/50";
-  if (status === "booked") return "bg-red-500/50";
+  if (status === "limited" || status === "limited-requested") {
+    return "bg-red-500/30";
+  }
   if (status === "requested" || status === "partial") return "bg-amber-400/50";
   if (status === "full") return "bg-neutral-400/50";
   return "bg-neutral-800/40"; // idle

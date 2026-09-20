@@ -58,9 +58,13 @@ body {
   outline-offset: 1px;
   border-radius: 9999px;
 }
-.rdp-day_booked:not([disabled]) .rdp-day_button {
-  background: #dc2626;
-  color: #ffffff;
+/* Calendar day weights, compositional: the red ring marks a partly
+   booked day (beds still remain — clear fill), amber fill marks a pending
+   request, and a partly booked day with a pending request carries BOTH
+   classes so the amber fill sits inside the red ring. Solid red + strike
+   is reserved for "full" — the only truly unbookable state. */
+.rdp-day_limited:not([disabled]) .rdp-day_button {
+  box-shadow: inset 0 0 0 2px #dc2626;
   border-radius: 9999px;
 }
 .rdp-day_requested:not([disabled]) .rdp-day_button {
@@ -69,10 +73,20 @@ body {
   border-radius: 9999px;
 }
 .rdp-day_full:not([disabled]) .rdp-day_button {
-  background: var(--subtle);
-  color: var(--muted);
+  background: #dc2626;
+  color: #ffffff;
   text-decoration: line-through;
   border-radius: 9999px;
+}
+/* Small-dot counterparts used by the calendar legend and room list so
+   both read "limited" the same way: a red ring, with amber fill only when
+   a pending request is also present. */
+.dot-limited {
+  box-shadow: inset 0 0 0 2px #dc2626;
+}
+.dot-limited-amber {
+  background: #fbbf24;
+  box-shadow: inset 0 0 0 2px #dc2626;
 }
 .rdp-today .rdp-day_button {
   color: #2563eb;

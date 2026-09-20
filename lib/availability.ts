@@ -90,17 +90,21 @@ export function countBookableDates(
 
 export type RoomDateStatus =
   | "free"
-  | "booked"
+  | "limited"
+  | "limited-requested"
   | "requested"
   | "partial"
   | "full"
   | "idle";
 
 // Marker state for ONE room across the selected dates, using the same
-// priority as the calendar (full > booked > requested):
+// priority as the calendar (full > limited-requested > limited >
+// requested):
 // - "full": some selected date has no free bed in this room
-// - "booked": every selected date still has a free bed, but a confirmed
+// - "limited": every selected date still has a free bed, and a confirmed
 //   booking touches this room (partially taken)
+// - "limited-requested": same as limited, but a pending request also
+//   touches this room
 // - "requested": every selected date still has a free bed, and a pending
 //   request (with no confirmed booking yet) touches this room
 // - "partial": some but not all selected dates are bookable
@@ -124,12 +128,17 @@ export function roomDateStatus(
   }
   if (bookable === 0) return "full";
   if (bookable < dates.length) return "partial";
-  if (confirmed) return "booked";
+  if (confirmed && pending) return "limited-requested";
+  if (confirmed) return "limited";
   if (pending) return "requested";
   return "free";
 }
 
-export type DayStatus = "booked" | "full" | "requested";
+export type DayStatus =
+  | "limited"
+  | "limited-requested"
+  | "full"
+  | "requested";
 
 // Calendar-day status for a SET of rooms (the user's selection).
 // - With selected rooms, only those rooms' bookings count — a pending
@@ -137,8 +146,9 @@ export type DayStatus = "booked" | "full" | "requested";
 //   Guest Room.
 // - With an empty selection this is an all-rooms overview.
 // Priority on the calendar: "full" (every selected room is booked out) >
-// "booked" (any selected room has a confirmed booking) > "requested" (only
-// pending requests exist).
+// "limited" (a confirmed booking exists but free beds remain) >
+// "requested" (only pending requests exist). "limited-requested" is the
+// limited case with a pending request on top.
 export function dayStatuses(
   availability: AvailabilityMap,
   rooms: RoomInfo[],
@@ -165,7 +175,8 @@ export function dayStatuses(
     }
     if (!hasSlots) continue;
     if (free === 0) map.set(date, "full");
-    else if (confirmed > 0) map.set(date, "booked");
+    else if (confirmed > 0 && pending > 0) map.set(date, "limited-requested");
+    else if (confirmed > 0) map.set(date, "limited");
     else if (pending > 0) map.set(date, "requested");
   }
 

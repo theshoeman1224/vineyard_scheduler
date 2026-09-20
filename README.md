@@ -15,8 +15,8 @@ in that email, or manages everything in a password-protected admin panel.
 - Rooms with configurable bed counts; each confirmed request occupies one bed
   of its room per night
 - Calendar markers reflect the selected rooms: pick one room to see just its
-  activity, pick several (or none) for the combined view — booked days take
-  priority over requested
+  activity, pick several (or none) for the combined view — partly booked
+  (limited) days take priority over requested
 - Blueprint image with clickable room hotspots colored by availability
 - Everyone sees all ongoing requests and their dates
 - Requests email the admin with **Approve / Deny** buttons (signed links that
