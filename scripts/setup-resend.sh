@@ -158,7 +158,7 @@ finish() {
 
 WORKER="vineyard-scheduler"
 DOMAIN="beachroad.casa"
-ADMIN_EMAIL="jshuman1224@gmail.com"
+ADMIN_EMAIL="shumanj1224@gmail.com"
 
 # put_worker_secret NAME VALUE — store a secret on the Cloudflare worker via
 # wrangler (the repo's production deployment). Falls back to a warning with
