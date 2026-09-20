@@ -7,7 +7,10 @@ export async function sendEmail(
   msg: EmailMessage,
 ): Promise<{ ok: boolean; error?: string }> {
   const key = resendApiKey();
-  if (!key) return { ok: false, error: "RESEND_API_KEY not set" };
+  if (!key) {
+    console.error("[mailer] RESEND_API_KEY is empty or unset — email skipped");
+    return { ok: false, error: "RESEND_API_KEY not set" };
+  }
   try {
     const resend = new Resend(key);
     const res = await resend.emails.send({
