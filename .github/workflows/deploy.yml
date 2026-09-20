@@ -24,7 +24,7 @@ jobs:
       - run: npm run test
       # Typecheck needs Next's generated route types (LayoutProps etc.),
       # which normally appear only after dev/build has run once.
-      - run: npx next typegen
+      - run: npm run typegen
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run build
