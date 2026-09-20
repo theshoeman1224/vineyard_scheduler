@@ -63,7 +63,7 @@ admin panel.
 
 | Var | Purpose |
 | --- | --- |
-| `DATABASE_URL` | Postgres connection string (use Neon's `-pooler` URL on Vercel) |
+| `DATABASE_URL` | Postgres connection string |
 | `SIGNING_SECRET` | Long random string; signs email action links + admin cookie |
 | `ADMIN_PASSWORD` | Password for `/admin` |
 | `ADMIN_EMAIL` | Where request notifications are sent |
@@ -71,15 +71,39 @@ admin panel.
 | `EMAIL_FROM` | Verified Resend sender, e.g. `House Scheduler <scheduler@yourdomain.com>` |
 | `APP_URL` | Public base URL used in email links |
 
+## Managing secrets
+
+Secrets are never stored in the repo.
+
+- **Local dev** — `.env` (gitignored). Edit it and restart `npm run dev`.
+- **Production (Cloudflare Workers)** — stored with wrangler, changed any
+  time with:
+
+  ```bash
+  echo "<new value>" | npx wrangler secret put ADMIN_PASSWORD --name vineyard-scheduler
+  npx wrangler secret list --name vineyard-scheduler   # verify
+  ```
+
+  Replace `ADMIN_PASSWORD` with any var above. Values cannot be read back,
+  only overwritten. Each `secret put` publishes a new worker version
+  immediately — no redeploy needed.
+
 ## Deploying
 
-1. Create a **Neon** database → copy the pooled connection string into `DATABASE_URL`.
+1. Create a **Postgres** database (e.g. Neon) → copy the pooled connection
+   string into `DATABASE_URL`.
 2. Create a **Resend** account → verify your sending domain → create an API key.
-3. Push to GitHub and import the repo in **Vercel** → add the env vars above
-   (`APP_URL` = your Vercel URL).
-4. Run `npm run db:push` against the production URL once (locally with the
-   prod `DATABASE_URL`), then optionally `npm run seed`.
-5. Sign in at `/admin` with `ADMIN_PASSWORD`, upload the blueprint image,
+3. Set the secrets on the worker (see *Managing secrets* above, including
+   `DATABASE_URL`; `APP_URL` = `https://beachroad.casa`).
+4. Deploy with:
+
+   ```bash
+   npm run deploy   # builds and deploys via opennextjs-cloudflare
+   ```
+5. Push the schema to the production database once (locally, with the prod
+   `DATABASE_URL` exported): `npm run db:push`, then `npm run seed` for the
+   template rooms.
+6. Sign in at `/admin` with `ADMIN_PASSWORD`, upload the blueprint image,
    create rooms, and drag a hotspot rectangle over each room.
 
 ## Data model

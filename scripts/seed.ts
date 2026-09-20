@@ -4,10 +4,9 @@ import { getDb } from "@/db";
 import { rooms } from "@/db/schema";
 
 const DEFAULT_ROOMS = [
-  { name: "Bunk Room", beds: 4, displayOrder: 0 },
-  { name: "Master Bedroom", beds: 2, displayOrder: 1 },
+  { name: "Master Bedroom", beds: 2, displayOrder: 0 },
+  { name: "Bunk Room", beds: 4, displayOrder: 1 },
   { name: "Loft", beds: 2, displayOrder: 2 },
-  { name: "Guest Room", beds: 1, displayOrder: 3 },
 ];
 
 async function main() {
