@@ -88,6 +88,16 @@ body {
   background: #fbbf24;
   box-shadow: inset 0 0 0 2px #dc2626;
 }
+/* Blueprint twin of dot-limited-amber: a translucent hotspot carries the
+   amber fill inside the red ring so a partly booked room with a pending
+   request reads like the calendar's composite day. Outline instead of
+   inset box-shadow so it cannot collide with the selection ring, which
+   is also a box-shadow. */
+.hotspot-limited-requested {
+  background: rgba(251, 191, 36, 0.5);
+  outline: 2px solid #dc2626;
+  outline-offset: -2px;
+}
 .rdp-today .rdp-day_button {
   color: #2563eb;
 }

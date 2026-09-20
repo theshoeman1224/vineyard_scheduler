@@ -3,6 +3,7 @@ import {
   computeAvailability,
   countBookableDates,
   dayStatuses,
+  roomCalendarStatus,
   roomDateStatus,
 } from "@/lib/availability";
 
@@ -187,6 +188,142 @@ describe("roomDateStatus", () => {
       ["2026-01-01"],
     );
     expect(roomDateStatus(avail, 1, ["2026-01-01"])).toBe("full");
+  });
+});
+
+describe("roomCalendarStatus", () => {
+  it("is idle with no dates selected", () => {
+    const avail = computeAvailability(
+      rooms,
+      [{ roomId: 1, status: "pending", dates: ["2026-01-01"] }],
+      ["2026-01-01"],
+    );
+    expect(roomCalendarStatus(avail, 1, [])).toBe("idle");
+  });
+
+  it("is free when no selected date has a booking", () => {
+    const avail = computeAvailability(rooms, [], ["2026-01-01", "2026-01-02"]);
+    expect(roomCalendarStatus(avail, 1, ["2026-01-01", "2026-01-02"])).toBe(
+      "free",
+    );
+  });
+
+  it("is limited when a confirmed booking leaves beds free", () => {
+    const avail = computeAvailability(
+      rooms,
+      [{ roomId: 1, status: "confirmed", dates: ["2026-01-01"] }],
+      ["2026-01-01"],
+    );
+    expect(roomCalendarStatus(avail, 1, ["2026-01-01"])).toBe("limited");
+  });
+
+  it("is limited-requested when confirmed and pending share a date", () => {
+    const avail = computeAvailability(
+      rooms,
+      [
+        { roomId: 1, status: "confirmed", dates: ["2026-01-01"] },
+        { roomId: 1, status: "pending", dates: ["2026-01-01"] },
+      ],
+      ["2026-01-01"],
+    );
+    expect(roomCalendarStatus(avail, 1, ["2026-01-01"])).toBe(
+      "limited-requested",
+    );
+  });
+
+  it("is requested when only a pending request touches the room", () => {
+    const avail = computeAvailability(
+      rooms,
+      [{ roomId: 2, status: "pending", dates: ["2026-01-01"] }],
+      ["2026-01-01"],
+    );
+    expect(roomCalendarStatus(avail, 2, ["2026-01-01"])).toBe("requested");
+  });
+
+  it("is full when a date has no free bed", () => {
+    const avail = computeAvailability(
+      rooms,
+      [{ roomId: 2, status: "confirmed", dates: ["2026-01-01"] }],
+      ["2026-01-01"],
+    );
+    expect(roomCalendarStatus(avail, 2, ["2026-01-01"])).toBe("full");
+  });
+
+  it("worst date wins: a fully booked date shows as full, not partial", () => {
+    // Jan 1 is full in the Bunk Room; Jan 2 is untouched. The calendar
+    // paints Jan 1 solid red, so the hotspot must read full too —
+    // roomDateStatus's range-level "partial" is deliberately not used.
+    const avail = computeAvailability(
+      rooms,
+      [
+        { roomId: 1, status: "confirmed", dates: ["2026-01-01"] },
+        { roomId: 1, status: "confirmed", dates: ["2026-01-01"] },
+      ],
+      ["2026-01-01", "2026-01-02"],
+    );
+    expect(roomDateStatus(avail, 1, ["2026-01-01", "2026-01-02"])).toBe(
+      "partial",
+    );
+    expect(roomCalendarStatus(avail, 1, ["2026-01-01", "2026-01-02"])).toBe(
+      "full",
+    );
+  });
+
+  it("worst date wins: a pending request on another date cannot soften limited", () => {
+    // Jan 1 is limited (confirmed, beds remain); Jan 2 is only pending.
+    // The calendar shows ring on Jan 1 and amber on Jan 2 — the ring is
+    // the worse state, so the hotspot stays limited.
+    const avail = computeAvailability(
+      rooms,
+      [
+        { roomId: 1, status: "confirmed", dates: ["2026-01-01"] },
+        { roomId: 1, status: "pending", dates: ["2026-01-02"] },
+      ],
+      ["2026-01-01", "2026-01-02"],
+    );
+    expect(roomCalendarStatus(avail, 1, ["2026-01-01", "2026-01-02"])).toBe(
+      "limited",
+    );
+  });
+
+  it("limited-requested outranks plain limited across dates", () => {
+    const avail = computeAvailability(
+      rooms,
+      [
+        { roomId: 1, status: "confirmed", dates: ["2026-01-01"] },
+        { roomId: 1, status: "pending", dates: ["2026-01-01"] },
+        { roomId: 1, status: "confirmed", dates: ["2026-01-02"] },
+      ],
+      ["2026-01-01", "2026-01-02"],
+    );
+    expect(roomCalendarStatus(avail, 1, ["2026-01-01", "2026-01-02"])).toBe(
+      "limited-requested",
+    );
+  });
+
+  it("full outranks limited-requested across dates", () => {
+    const avail = computeAvailability(
+      rooms,
+      [
+        { roomId: 2, status: "confirmed", dates: ["2026-01-01"] },
+        { roomId: 2, status: "confirmed", dates: ["2026-01-02"] },
+        { roomId: 2, status: "confirmed", dates: ["2026-01-02"] },
+        { roomId: 2, status: "pending", dates: ["2026-01-02"] },
+      ],
+      ["2026-01-01", "2026-01-02"],
+    );
+    expect(roomCalendarStatus(avail, 2, ["2026-01-01", "2026-01-02"])).toBe(
+      "full",
+    );
+  });
+
+  it("treats dates without slot data as unmarked, like the calendar", () => {
+    const avail = computeAvailability(
+      rooms,
+      [{ roomId: 1, status: "confirmed", dates: ["2026-01-01"] }],
+      ["2026-01-01"],
+    );
+    expect(roomCalendarStatus(avail, 1, ["2026-02-01"])).toBe("free");
   });
 });
 

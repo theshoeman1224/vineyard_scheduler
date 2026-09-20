@@ -1,7 +1,10 @@
 "use client";
 
 import type { AvailabilityMap, RoomInfo } from "@/lib/availability";
-import { countBookableDates, roomDateStatus } from "@/lib/availability";
+import {
+  countBookableDates,
+  roomCalendarStatus,
+} from "@/lib/availability";
 import { bedsLabel, hotspotClass, roomsSelectedHint } from "@/app/lib/roomText";
 
 export function BlueprintMap({
@@ -54,7 +57,7 @@ export function BlueprintMap({
         {withHotspots.map((room) => {
           const bookable = countBookableDates(availability, room.id, selectedDates);
           const bg = hotspotClass(
-            roomDateStatus(availability, room.id, selectedDates),
+            roomCalendarStatus(availability, room.id, selectedDates),
           );
           const selected = selectedRoomIds.includes(room.id);
           return (

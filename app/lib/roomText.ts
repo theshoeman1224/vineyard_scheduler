@@ -63,13 +63,16 @@ export function availabilityDotClass(status: RoomDateStatus): string {
   return ""; // idle
 }
 
-// Hotspot background on the blueprint for the same states.
+// Hotspot background on the blueprint, in the calendar's hues at
+// blueprint translucency: "full" is a strong red (the calendar's only
+// unbookable day) instead of muted gray, and "limited-requested" keeps
+// its red-ring-plus-amber composite via .hotspot-limited-requested
+// rather than collapsing into the same red as plain "limited".
 export function hotspotClass(status: RoomDateStatus): string {
   if (status === "free") return "bg-green-500/50";
-  if (status === "limited" || status === "limited-requested") {
-    return "bg-red-500/30";
-  }
+  if (status === "limited") return "bg-red-500/30";
+  if (status === "limited-requested") return "hotspot-limited-requested";
   if (status === "requested" || status === "partial") return "bg-amber-400/50";
-  if (status === "full") return "bg-neutral-400/50";
+  if (status === "full") return "bg-red-600/50";
   return "bg-neutral-800/40"; // idle
 }

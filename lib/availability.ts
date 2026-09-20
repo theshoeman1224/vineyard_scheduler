@@ -97,6 +97,19 @@ export type RoomDateStatus =
   | "full"
   | "idle";
 
+// Worst-first ranking for folding per-date states; higher beats lower.
+// "partial" is a range-level state, never a per-day one, so its rank
+// is a placeholder that never wins a fold.
+const STATUS_RANK: Record<RoomDateStatus, number> = {
+  idle: -1,
+  free: 0,
+  requested: 1,
+  partial: 0,
+  limited: 2,
+  "limited-requested": 3,
+  full: 4,
+};
+
 // Marker state for ONE room across the selected dates, using the same
 // priority as the calendar (full > limited-requested > limited >
 // requested):
@@ -132,6 +145,37 @@ export function roomDateStatus(
   if (confirmed) return "limited";
   if (pending) return "requested";
   return "free";
+}
+
+// The room state as the CALENDAR renders it for the selected dates:
+// each date is scored exactly like a calendar day for this room (the
+// dayStatuses branch for a single room), then the worst date wins, so
+// the blueprint hotspot never looks healthier than the calendar does
+// on any chosen date. Dates with no slot data are unmarked on the
+// calendar and therefore read as free here.
+export function roomCalendarStatus(
+  avail: AvailabilityMap,
+  roomId: number,
+  dates: string[],
+): RoomDateStatus {
+  if (dates.length === 0) return "idle";
+  let worst: RoomDateStatus = "free";
+  for (const date of dates) {
+    const slot = avail[date]?.[roomId];
+    if (!slot) continue;
+    const day: RoomDateStatus =
+      slot.free === 0
+        ? "full"
+        : slot.confirmed > 0 && slot.pending > 0
+          ? "limited-requested"
+          : slot.confirmed > 0
+            ? "limited"
+            : slot.pending > 0
+              ? "requested"
+              : "free";
+    if (STATUS_RANK[day] > STATUS_RANK[worst]) worst = day;
+  }
+  return worst;
 }
 
 export type DayStatus =
