@@ -9,6 +9,8 @@ export const MAX_NAME_LENGTH = 80;
 export const MAX_NOTE_LENGTH = 500;
 export const MAX_ROOM_NAME_LENGTH = 60;
 export const MAX_BEDS = 20;
+// 254 is the longest address SMTP can deliver to (RFC 5321 path limit).
+export const MAX_EMAIL_LENGTH = 254;
 
 const dateStr = z
   .string()
@@ -32,23 +34,21 @@ function isEmailShape(s: string): boolean {
   return dot > 0 && dot < domain.length - 1;
 }
 
+// One email rule for the public form and the admin edit form: trimmed,
+// length-capped, shape-checked; empty means "no email" (null).
+const emailString = z
+  .string()
+  .trim()
+  .max(MAX_EMAIL_LENGTH, "Email too long")
+  .refine((s) => s === "" || isEmailShape(s), "Invalid email");
+
 const optionalEmail = z
-  .union([
-    z.string().trim().refine(isEmailShape, "Invalid email"),
-    z.literal(""),
-    z.undefined(),
-    z.null(),
-  ])
+  .union([emailString, z.undefined(), z.null()])
   .transform((v) => v || null)
   .default(null);
 
 const optionalNote = z
   .union([z.string().trim().max(MAX_NOTE_LENGTH, "Note too long"), z.undefined(), z.null()])
-  .transform((v) => v || null)
-  .default(null);
-
-const nullableEmail = z
-  .union([z.string().trim().max(120), z.null()])
   .transform((v) => v || null)
   .default(null);
 
@@ -92,7 +92,7 @@ export const roomUpsertSchema = z.object({
 
 export const requestEditSchema = z.object({
   name: z.string().trim().min(1).max(MAX_NAME_LENGTH),
-  email: nullableEmail,
+  email: optionalEmail,
   roomId: z.number().int().positive(),
   status: z.enum(["pending", "confirmed", "denied"]),
   dates: z

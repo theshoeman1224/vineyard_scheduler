@@ -9,7 +9,7 @@ import {
   isValidDateStr,
   parseDatesText,
 } from "@/lib/dates";
-import { MAX_NAME_LENGTH, MAX_NOTE_LENGTH } from "@/lib/validation";
+import { MAX_EMAIL_LENGTH, MAX_NAME_LENGTH, MAX_NOTE_LENGTH } from "@/lib/validation";
 import type { RequestPublic } from "@/app/lib/requestTypes";
 import { editPayload } from "@/app/lib/requestTypes";
 import { roomLabel } from "@/app/lib/roomText";
@@ -249,6 +249,7 @@ function EditForm({
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            maxLength={MAX_EMAIL_LENGTH}
             className={inputClass}
           />
         </Field>

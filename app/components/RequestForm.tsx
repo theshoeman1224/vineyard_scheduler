@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { RoomInfo } from "@/lib/availability";
 import { formatDateHuman } from "@/lib/dates";
-import { MAX_NAME_LENGTH, MAX_NOTE_LENGTH } from "@/lib/validation";
+import { MAX_EMAIL_LENGTH, MAX_NAME_LENGTH, MAX_NOTE_LENGTH } from "@/lib/validation";
 import { detailsHint, roomLabel } from "@/app/lib/roomText";
 import { apiSend } from "@/app/lib/apiClient";
 import { Field, inputClass } from "@/app/components/Field";
@@ -132,6 +132,7 @@ export function RequestForm({
             disabled={!ready}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            maxLength={MAX_EMAIL_LENGTH}
             className={controlClass}
             placeholder="you@example.com"
           />

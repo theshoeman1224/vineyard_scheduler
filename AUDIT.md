@@ -11,9 +11,6 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
 
 ## Misalignments with AGENTS.md / README
 
-- **Email has no shared length limit.** No `MAX_EMAIL_LENGTH` constant; the
-  public schema has no limit, the admin schema hardcodes 120 without a shape
-  check, and neither email input sets `maxLength`.
 - **Bed reduction bypasses capacity.** Lowering a room's beds below its
   confirmed bookings is not checked; `free = max(0, …)` hides the overbooking.
 - **`localeCompare` on dates.** `RequestsTable.tsx` sorts dates with

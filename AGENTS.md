@@ -27,7 +27,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
   `inputClass` (form fields), `StatusPill`, `app/lib/roomText` (room and
   bed labels), `app/lib/tokenPage` (the HTML pages behind email links).
   Reuse them rather than creating new copies.
-- Input limits (`MAX_NAME_LENGTH`, `MAX_NOTE_LENGTH`,
+- Input limits (`MAX_NAME_LENGTH`, `MAX_NOTE_LENGTH`, `MAX_EMAIL_LENGTH`,
   `MAX_ROOM_NAME_LENGTH`, `MAX_BEDS`) live in `lib/validation.ts` beside
   the zod schemas. HTML `maxLength`/`max` attributes must use those
   constants so browser and server limits cannot drift.

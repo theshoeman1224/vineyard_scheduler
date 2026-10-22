@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createRequestSchema, requestEditSchema } from "@/lib/validation";
+import { createRequestSchema, MAX_EMAIL_LENGTH, requestEditSchema } from "@/lib/validation";
 import { isValidDateStr, todayStr, addDaysStr } from "@/lib/dates";
 
 const FUTURE = addDaysStr(todayStr(), 10);
@@ -157,6 +157,39 @@ describe("email shape", () => {
     expect(withEmail("josh smith@example.com").success).toBe(false);
     expect(withEmail("josh@example .com").success).toBe(false);
     expect(withEmail("josh@example@com.net").success).toBe(false);
+  });
+
+  it("caps length at MAX_EMAIL_LENGTH", () => {
+    const domain = "@example.com";
+    const atLimit = "a".repeat(MAX_EMAIL_LENGTH - domain.length) + domain;
+    expect(withEmail(atLimit).success).toBe(true);
+    expect(withEmail("a" + atLimit).success).toBe(false);
+  });
+});
+
+describe("admin edit email", () => {
+  const withEmail = (email: string | null) =>
+    requestEditSchema.safeParse({
+      name: "Josh",
+      email,
+      roomId: 2,
+      status: "pending",
+      dates: [FUTURE],
+      note: null,
+    });
+
+  it("uses the same shape check and limit as the public form", () => {
+    expect(withEmail("josh@example.com").success).toBe(true);
+    expect(withEmail("not-an-email").success).toBe(false);
+    expect(withEmail("a".repeat(MAX_EMAIL_LENGTH) + "@example.com").success).toBe(false);
+  });
+
+  it("treats empty or null as no email", () => {
+    for (const email of ["", "   ", null]) {
+      const parsed = withEmail(email);
+      expect(parsed.success).toBe(true);
+      if (parsed.success) expect(parsed.data.email).toBeNull();
+    }
   });
 });
 
