@@ -76,7 +76,10 @@ export function Scheduler({
       onRoomChange={toggleRoom}
       onSuccess={onSubmitSuccess}
       onError={setSubmitError}
-      onClearDates={() => onDatesChange([])}
+      // Post-submit reset clears dates only. Going through onDatesChange
+      // would also reset `success` in the same batch as onSuccess set it,
+      // hiding the withdraw link the requester needs to see.
+      onClearDates={() => setSelectedDates([])}
     />
   );
 
