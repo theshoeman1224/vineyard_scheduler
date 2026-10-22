@@ -54,10 +54,7 @@ try {
 await page.screenshot({ path: shot });
 const link = ok ? await page.locator('a[href*="/api/cancel/"]').getAttribute("href") : null;
 console.log(ok ? `PASS  withdraw banner shown: ${link}` : "FAIL  withdraw banner not shown");
-// React's dev build logs one eval()/CSP error per page until the dev CSP
-// is fixed (see AUDIT.md); anything else is a real problem.
-const real = errors.filter((e) => !e.includes("eval() is not supported"));
-console.log(real.length ? `Console errors:\n${real.join("\n")}` : "No unexpected console errors.");
+console.log(errors.length ? `Console errors:\n${errors.join("\n")}` : "No console errors.");
 console.log(`Screenshot: ${shot}`);
 await browser.close();
-process.exit(ok && real.length === 0 ? 0 : 1);
+process.exit(ok && errors.length === 0 ? 0 : 1);

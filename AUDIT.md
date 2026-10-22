@@ -61,11 +61,6 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
 - **Blueprint not refreshed after upload.** Same image URL, so the admin
   editor keeps showing the old image.
 - **"Current requests" shows all history**, oldest first.
-- **Dev-only CSP error on every page.** The `next.config.ts` CSP omits
-  `'unsafe-eval'`, which React needs in development (callstack
-  reconstruction), so `next dev` shows a "1 Issue" overlay and a console
-  error on every page. Production is unaffected. Add `'unsafe-eval'` to
-  `script-src` only when `NODE_ENV === "development"`.
 - **Polish.** Geist font loaded but overridden by `body { font-family: Arial }`;
   toggles lack `aria-pressed`; calendar state is color-only; `StatusPill`
   has no dark variants; no `error.tsx`.

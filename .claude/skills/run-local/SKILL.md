@@ -95,6 +95,5 @@ docker exec house-sched-pg psql -U postgres -c 'DROP DATABASE IF EXISTS house_te
   `smoke.sh` sends.
 - **Dates must be in the future by the server's clock.** Use dates at least
   a few days out.
-- **Expected dev noise:** one `eval() is not supported` console error and a
-  "1 Issue" overlay on every page, from the dev-mode CSP (tracked in
-  `AUDIT.md`). `banner.mjs` ignores exactly that error.
+- **Dev CSP allows `eval()`** (React dev needs it). Any console error or
+  "Issue" overlay in dev is a real problem; `banner.mjs` fails on any.
