@@ -11,8 +11,6 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
 
 ## Misalignments with AGENTS.md / README
 
-- **Bed reduction bypasses capacity.** Lowering a room's beds below its
-  confirmed bookings is not checked; `free = max(0, …)` hides the overbooking.
 - **`db/index.ts` pool comment is inaccurate.** It assumes the previous
   request has finished when its pool is retired; one isolate serves
   overlapping requests.

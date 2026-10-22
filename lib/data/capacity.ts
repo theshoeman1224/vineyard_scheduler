@@ -16,6 +16,42 @@ export function firstFullDate(
   return null;
 }
 
+// First night (earliest) whose confirmed bookings exceed `beds`, or null.
+// Used when an admin lowers a room's bed count: the new count must still
+// hold every confirmed booking. Pure so the boundary can be tested.
+export function firstOverbookedNight(
+  counts: Map<string, number>,
+  beds: number,
+): { date: string; count: number } | null {
+  const over = [...counts]
+    .filter(([, count]) => count > beds)
+    .sort(([a], [b]) => (a < b ? -1 : 1));
+  return over[0] ? { date: over[0][0], count: over[0][1] } : null;
+}
+
+// Confirmed bookings per night for one room, from `fromDate` on (past
+// nights cannot be overbooked any more). Callers must lock the room row.
+export async function confirmedCountsFrom(
+  tx: Tx,
+  roomId: number,
+  fromDate: string,
+): Promise<Map<string, number>> {
+  const rows = await tx.execute(sql`
+    SELECT rd.date, COUNT(*)::int AS cnt
+    FROM ${requestDates} rd
+    JOIN ${requests} r ON r.id = rd.request_id
+    WHERE r.status = 'confirmed'
+      AND r.room_id = ${roomId}
+      AND rd.date >= ${fromDate}
+    GROUP BY rd.date
+  `);
+  const counts = new Map<string, number>();
+  for (const row of rows.rows as { date: string; cnt: number }[]) {
+    counts.set(row.date, Number(row.cnt));
+  }
+  return counts;
+}
+
 // Counts confirmed bookings per date for one room, excluding the request
 // being approved or edited (its own rows must not count against it).
 // Callers must lock the room row first so concurrent approvals serialize

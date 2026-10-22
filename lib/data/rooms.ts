@@ -2,7 +2,9 @@ import { asc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { requests, rooms, type Room } from "@/db/schema";
 import type { RoomInfo } from "@/lib/availability";
+import { earliestBookableDate } from "@/lib/dates";
 import { roomWriteValues, type RoomUpsertInput } from "./roomValues";
+import { confirmedCountsFrom, firstOverbookedNight } from "./capacity";
 import {
   PG_FOREIGN_KEY_VIOLATION,
   PG_UNIQUE_VIOLATION,
@@ -33,29 +35,48 @@ export async function getRooms(): Promise<RoomInfo[]> {
 // Creates or updates a room. Omitted hotspot fields are left as they are
 // (see roomWriteValues). Expected failures come back as a WriteResult:
 // a duplicate name (unique constraint) is a 409, an unknown id a 404.
+//
+// An update locks the room row before counting its confirmed bookings —
+// the same lock approvals take — so a bed reduction and a concurrent
+// approval serialize. Lowering beds below the confirmed bookings on any
+// upcoming night is refused (409) rather than leaving the room overbooked.
 export async function upsertRoom(input: RoomUpsertInput): Promise<WriteResult> {
   const db = getDb();
   const values = roomWriteValues(input);
   try {
-    if (input.id) {
-      const updated = await db
-        .update(rooms)
-        .set(values)
-        .where(eq(rooms.id, input.id))
-        .returning({ id: rooms.id });
-      if (updated.length === 0) {
-        return { ok: false, status: 404, error: "Room not found" };
-      }
-    } else {
+    if (!input.id) {
       await db.insert(rooms).values(values);
+      return { ok: true };
     }
+    const id = input.id;
+    return await db.transaction(async (tx): Promise<WriteResult> => {
+      const current = await tx
+        .select({ beds: rooms.beds })
+        .from(rooms)
+        .where(eq(rooms.id, id))
+        .for("update");
+      if (!current[0]) return { ok: false, status: 404, error: "Room not found" };
+
+      if (input.beds < current[0].beds) {
+        const counts = await confirmedCountsFrom(tx, id, earliestBookableDate());
+        const over = firstOverbookedNight(counts, input.beds);
+        if (over) {
+          return {
+            ok: false,
+            status: 409,
+            error: `${over.date} has ${over.count} confirmed bookings in this room, so it needs at least ${over.count} beds. Move or deny some bookings first.`,
+          };
+        }
+      }
+      await tx.update(rooms).set(values).where(eq(rooms.id, id));
+      return { ok: true };
+    });
   } catch (e) {
     if (pgErrorCode(e) === PG_UNIQUE_VIOLATION) {
       return { ok: false, status: 409, error: `A room named “${input.name}” already exists.` };
     }
     throw e;
   }
-  return { ok: true };
 }
 
 const ROOM_IN_USE = "Room has requests — remove or reassign them first.";

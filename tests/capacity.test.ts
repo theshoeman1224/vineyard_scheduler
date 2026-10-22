@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { firstFullDate } from "@/lib/data/capacity";
+import { firstFullDate, firstOverbookedNight } from "@/lib/data/capacity";
 
 describe("firstFullDate", () => {
   it("returns null when no date has reached capacity", () => {
@@ -29,5 +29,22 @@ describe("firstFullDate", () => {
 
   it("returns null for an empty date list", () => {
     expect(firstFullDate([], new Map([["2026-01-01", 5]]), 1)).toBeNull();
+  });
+});
+
+describe("firstOverbookedNight", () => {
+  const counts = new Map([
+    ["2026-12-03", 3],
+    ["2026-12-01", 3],
+    ["2026-12-02", 1],
+  ]);
+
+  it("returns the earliest night with more bookings than beds", () => {
+    expect(firstOverbookedNight(counts, 2)).toEqual({ date: "2026-12-01", count: 3 });
+  });
+
+  it("allows exactly as many bookings as beds", () => {
+    expect(firstOverbookedNight(counts, 3)).toBeNull();
+    expect(firstOverbookedNight(new Map(), 0)).toBeNull();
   });
 });
