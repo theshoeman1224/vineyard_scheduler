@@ -46,3 +46,36 @@ export async function capacityConflicts(
   }
   return conflicts;
 }
+
+// Confirmed bookings per room per night from requests OUTSIDE the group,
+// limited to the group's rooms and nights: everything planGroupDecision
+// needs, in one query. Callers must hold the group's room locks.
+export async function confirmedCountsOutsideGroup(
+  tx: Tx,
+  groupId: string,
+): Promise<Map<number, Map<string, number>>> {
+  const rows = await tx.execute(sql`
+    SELECT r.room_id, rd.date, COUNT(*)::int AS cnt
+    FROM ${requestDates} rd
+    JOIN ${requests} r ON r.id = rd.request_id
+    WHERE r.status = 'confirmed'
+      AND r.group_id <> ${groupId}
+      AND r.room_id IN (SELECT room_id FROM ${requests} WHERE group_id = ${groupId})
+      AND rd.date IN (
+        SELECT gd.date FROM ${requestDates} gd
+        JOIN ${requests} g ON g.id = gd.request_id
+        WHERE g.group_id = ${groupId}
+      )
+    GROUP BY r.room_id, rd.date
+  `);
+  const counts = new Map<number, Map<string, number>>();
+  for (const row of rows.rows as { room_id: number; date: string; cnt: number }[]) {
+    let m = counts.get(Number(row.room_id));
+    if (!m) {
+      m = new Map();
+      counts.set(Number(row.room_id), m);
+    }
+    m.set(row.date, Number(row.cnt));
+  }
+  return counts;
+}

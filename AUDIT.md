@@ -24,8 +24,6 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
 - **Per-request pool churn on Workers.** Overlapping requests retire each
   other's pools, so most requests open a fresh connection. Consider
   Hyperdrive or Neon's serverless driver.
-- **Lock-order deadlock risk.** `decideGroup` locks rooms in request-id
-  order, not room-id order.
 - **Missing constraints.** No CHECKs for `beds >= 0`, hotspot ranges, or the
   `blueprint.id = 1` singleton; `request_dates` has no primary key.
 - **Unhandled constraint errors.** Duplicate room names and the

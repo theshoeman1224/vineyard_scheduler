@@ -2,30 +2,20 @@ import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { requestDates, requests, rooms, type RequestStatus } from "@/db/schema";
 import { randomToken, randomUUID, type DecideAction } from "@/lib/tokens";
-import { planRowDecision } from "./decision";
+import { sortUniqueDates } from "@/lib/dates";
+import { planGroupDecision, type GroupDecisionRoomResult } from "./decision";
 import {
   baseRequestQuery,
   attachDates,
   type RequestWithDetails,
 } from "./shared";
-import { capacityConflicts, firstFullDate } from "./capacity";
+import { capacityConflicts, confirmedCountsOutsideGroup, firstFullDate } from "./capacity";
 
 export type DecideResult =
   | { ok: true }
   | { ok: false; error: string };
 
-// `ok`: the row ended in the state the action asked for.
-// `changed`: this call updated the row (drives requester notification).
-// `status`: the row's status after the call.
-export type GroupDecisionRoomResult = {
-  roomId: number;
-  roomName: string;
-  requestId: number;
-  ok: boolean;
-  changed: boolean;
-  status: RequestStatus;
-  error?: string;
-};
+export type { GroupDecisionRoomResult } from "./decision";
 
 export async function getRequestsAll(): Promise<RequestWithDetails[]> {
   const db = getDb();
@@ -133,16 +123,29 @@ export async function createRequest(
   });
 }
 
-// Approve/deny a whole submission group. Only pending rows change (see
-// planRowDecision for rows the admin already decided). Each room is
-// confirmed independently with a race-safe capacity re-check (locking its
-// room row); a room that no longer has beds stays pending and is reported.
+// Approve/deny a whole submission group in one transaction.
+//
+// Lock order is rooms (ascending id) then request rows — the same order
+// as updateRequestAsAdmin (room, then its request), so concurrent
+// decisions and edits serialize instead of deadlocking. Room locks are
+// only needed for approvals (capacity); a deny touches request rows only.
+// With the locks held, dates and other groups' confirmed counts are read
+// in two queries, planGroupDecision decides every row, and the changes
+// are written as at most two batch updates.
 export async function decideGroup(
   groupId: string,
   action: DecideAction,
 ): Promise<GroupDecisionRoomResult[]> {
   const db = getDb();
   return db.transaction(async (tx) => {
+    if (action === "approve") {
+      await tx.execute(sql`
+        SELECT id FROM ${rooms}
+        WHERE id IN (SELECT room_id FROM ${requests} WHERE group_id = ${groupId})
+        ORDER BY id
+        FOR UPDATE`);
+    }
+
     const rows = await tx
       .select({
         id: requests.id,
@@ -154,64 +157,34 @@ export async function decideGroup(
       .from(requests)
       .innerJoin(rooms, eq(rooms.id, requests.roomId))
       .where(eq(requests.groupId, groupId))
-      .orderBy(asc(requests.id));
-
+      .orderBy(asc(requests.id))
+      .for("update", { of: requests });
     if (rows.length === 0) return [];
 
-    const results: GroupDecisionRoomResult[] = [];
-
-    for (const req of rows) {
-      const base = { roomId: req.roomId, roomName: req.roomName, requestId: req.id };
-      const plan = planRowDecision(req.status, action);
-
-      if (plan.kind === "unchanged") {
-        results.push({ ...base, ok: true, changed: false, status: req.status });
-        continue;
-      }
-
-      if (plan.kind === "conflict") {
-        results.push({ ...base, ok: false, changed: false, status: req.status, error: plan.error });
-        continue;
-      }
-
-      if (plan.kind === "deny") {
-        await tx
-          .update(requests)
-          .set({ status: "denied", updatedAt: new Date() })
-          .where(eq(requests.id, req.id));
-        results.push({ ...base, ok: true, changed: true, status: "denied" });
-        continue;
-      }
-
-      // Lock the room row to serialize concurrent approvals for this room.
-      await tx.execute(sql`SELECT id FROM rooms WHERE id = ${req.roomId} FOR UPDATE`);
-
-      const reqDates = await tx
-        .select({ date: requestDates.date })
-        .from(requestDates)
-        .where(eq(requestDates.requestId, req.id));
-      const dateList = reqDates.map((r) => r.date);
-      const conflicts = await capacityConflicts(tx, req.roomId, req.id, dateList);
-      const full = firstFullDate(dateList, conflicts, req.beds);
-
-      if (full) {
-        results.push({
-          ...base,
-          ok: false,
-          changed: false,
-          status: req.status,
-          error: `No beds left in ${req.roomName} on ${full}`,
-        });
-        continue;
-      }
-
-      await tx
-        .update(requests)
-        .set({ status: "confirmed", updatedAt: new Date() })
-        .where(eq(requests.id, req.id));
-      results.push({ ...base, ok: true, changed: true, status: "confirmed" });
+    const dateRows = await tx
+      .select({ requestId: requestDates.requestId, date: requestDates.date })
+      .from(requestDates)
+      .where(inArray(requestDates.requestId, rows.map((r) => r.id)));
+    const datesById = new Map<number, string[]>();
+    for (const d of dateRows) {
+      datesById.set(d.requestId, [...(datesById.get(d.requestId) ?? []), d.date]);
     }
 
+    const otherConfirmed =
+      action === "approve" ? await confirmedCountsOutsideGroup(tx, groupId) : new Map();
+    const results = planGroupDecision(
+      rows.map((r) => ({ ...r, dates: sortUniqueDates(datesById.get(r.id) ?? []) })),
+      action,
+      otherConfirmed,
+    );
+
+    const changedIds = results.filter((r) => r.changed).map((r) => r.requestId);
+    if (changedIds.length > 0) {
+      await tx
+        .update(requests)
+        .set({ status: action === "approve" ? "confirmed" : "denied", updatedAt: new Date() })
+        .where(inArray(requests.id, changedIds));
+    }
     return results;
   });
 }
