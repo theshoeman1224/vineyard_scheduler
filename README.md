@@ -51,6 +51,9 @@ the app itself with no service dependency.
 
 ## Local development
 
+Requires Node 24 (the current LTS). `.nvmrc` pins it for both local dev
+and CI, so `nvm use` picks the right version.
+
 ```bash
 npm install
 cp .env.example .env   # fill in DATABASE_URL + SIGNING_SECRET + ADMIN_PASSWORD

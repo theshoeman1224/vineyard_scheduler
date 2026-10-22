@@ -15,10 +15,13 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      # v7 of both actions run on the Node 24 action runtime (v4 used the
+      # deprecated Node 20). The build's Node version comes from .nvmrc so
+      # CI and local dev cannot drift.
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version-file: .nvmrc
           cache: npm
       # Lifecycle scripts are skipped so a compromised dependency cannot
       # execute code at install time; every binary the build needs
