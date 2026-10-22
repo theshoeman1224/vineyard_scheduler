@@ -5,28 +5,57 @@ import {
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "./schema";
+import { shouldRetirePool } from "./poolRetirement";
 
 type Ctx = CloudflareContext["ctx"];
 
 // The Workers runtime reaps outbound sockets when a request finishes, and pg
 // can't detect a dead socket — queries awaiting one hang until the runtime
-// cancels the request. So on Cloudflare we scope one fresh pool to each
-// request (keyed on the request's ExecutionContext). The previous request's
-// pool is retired when the next request opens its own — at that point the
-// old request has finished, so its connections are idle and closing them
-// cannot race in-flight queries. (A fixed close timer cannot: any request
-// whose DB work outlives the timer gets its queries killed mid-flight.)
-// In plain Node (dev/tests) a single module-level pool is safe and kept
-// as-is.
+// cancels the request. So on Cloudflare each request gets its own pool
+// (keyed on its ExecutionContext) and never reuses another request's.
+//
+// One isolate serves overlapping requests, so a pool is not closed when a
+// newer request arrives (its request may still be mid-query). Instead,
+// whenever a new pool is created, older pools are retired once
+// shouldRetirePool says they are idle (see db/poolRetirement.ts). Closing
+// them only frees the pool objects; their sockets are already gone.
+//
+// In plain Node (dev/tests) a single module-level pool is safe and kept.
 
 // Guards so a reaped socket fails fast instead of hanging the worker until
 // the runtime cancels the request.
 const CONNECT_TIMEOUT_MS = 10_000;
 const STATEMENT_TIMEOUT_MS = 10_000;
+// pool.end() waits for checked-out clients; a stuck one never returns.
+const POOL_END_WAIT_MS = 5_000;
 
 let nodePool: Pool | null = null;
 
-let cfCache: { ctx: Ctx; pool: Pool } | null = null;
+type PoolEntry = { pool: Pool; lastUsedAt: number };
+const cfPools = new Map<Ctx, PoolEntry>();
+
+function newPool(url: string): Pool {
+  return new Pool({
+    connectionString: url,
+    max: 5,
+    connectionTimeoutMillis: CONNECT_TIMEOUT_MS,
+    statement_timeout: STATEMENT_TIMEOUT_MS,
+  });
+}
+
+function retireIdlePools(ctx: Ctx, now: number) {
+  for (const [key, entry] of cfPools) {
+    const busy = entry.pool.totalCount > entry.pool.idleCount || entry.pool.waitingCount > 0;
+    if (!shouldRetirePool({ lastUsedAt: entry.lastUsedAt, busy }, now)) continue;
+    cfPools.delete(key);
+    ctx.waitUntil(
+      Promise.race([
+        entry.pool.end().catch(() => {}),
+        new Promise((resolve) => setTimeout(resolve, POOL_END_WAIT_MS)),
+      ]),
+    );
+  }
+}
 
 export function getDb() {
   let cf: CloudflareContext | undefined;
@@ -36,52 +65,25 @@ export function getDb() {
     // Not running in a worker (next dev / vitest): use the long-lived pool.
   }
 
-  if (!cf) {
-    if (!nodePool) {
-      const url = process.env.DATABASE_URL;
-      if (!url) {
-        throw new Error("DATABASE_URL is not set");
-      }
-      nodePool = new Pool({
-        connectionString: url,
-        max: 5,
-        connectionTimeoutMillis: CONNECT_TIMEOUT_MS,
-        statement_timeout: STATEMENT_TIMEOUT_MS,
-      });
-    }
-    return drizzle(nodePool, { schema });
-  }
-
   const url = process.env.DATABASE_URL;
   if (!url) {
     throw new Error("DATABASE_URL is not set");
   }
 
-  if (cfCache && cfCache.ctx === cf.ctx) {
-    return drizzle(cfCache.pool, { schema });
+  if (!cf) {
+    nodePool ??= newPool(url);
+    return drizzle(nodePool, { schema });
   }
 
-  const previous = cfCache;
-  const pool = new Pool({
-    connectionString: url,
-    max: 5,
-    connectionTimeoutMillis: CONNECT_TIMEOUT_MS,
-    statement_timeout: STATEMENT_TIMEOUT_MS,
-  });
-  cfCache = { ctx: cf.ctx, pool };
-  if (previous) {
-    // Retire the previous request's pool with a small grace window in case
-    // two requests overlap on this isolate. Its sockets are dead (reaped
-    // when its request finished); ending it just frees the pool objects.
-    cf.ctx.waitUntil(
-      (async () => {
-        await new Promise((resolve) => setTimeout(resolve, 2_000));
-        await previous.pool.end().catch(() => {});
-      })(),
-    );
+  const now = Date.now();
+  let entry = cfPools.get(cf.ctx);
+  if (!entry) {
+    retireIdlePools(cf.ctx, now);
+    entry = { pool: newPool(url), lastUsedAt: now };
+    cfPools.set(cf.ctx, entry);
   }
-
-  return drizzle(pool, { schema });
+  entry.lastUsedAt = now;
+  return drizzle(entry.pool, { schema });
 }
 
 export type Db = ReturnType<typeof getDb>;

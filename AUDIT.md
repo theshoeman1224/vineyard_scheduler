@@ -9,17 +9,9 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
 
 ---
 
-## Misalignments with AGENTS.md / README
-
-- **`db/index.ts` pool comment is inaccurate.** It assumes the previous
-  request has finished when its pool is retired; one isolate serves
-  overlapping requests.
 
 ## Database
 
-- **Per-request pool churn on Workers.** Overlapping requests retire each
-  other's pools, so most requests open a fresh connection. Consider
-  Hyperdrive or Neon's serverless driver.
 - **Blueprint served `no-store`.** Up to ~4MB of base64 is read and decoded
   on every view; use a versioned URL with long-lived caching.
 
@@ -43,6 +35,16 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
   constraints, so deploying first is safe. Running `db:migrate` in the
   deploy workflow would need `DATABASE_URL` as a GitHub secret. I left
   that for you to decide.
+
+- **Hyperdrive (or Neon's serverless driver) for database connections?**
+  Pools are now kept per request and retired only when idle, so
+  overlapping requests no longer close each other's connections. But every
+  request still opens a new TCP+TLS connection to Neon, because Workers
+  cannot keep sockets between requests. Cloudflare Hyperdrive keeps warm
+  connections at the edge and would remove that setup cost (typically
+  the largest part of a page's database time). It needs a Hyperdrive
+  config in your Cloudflare account and a `wrangler.jsonc` binding, so I
+  did not set it up.
 
 ## Decisions made while you were away
 
