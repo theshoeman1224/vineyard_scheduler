@@ -22,7 +22,6 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
 - **`db/index.ts` pool comment is inaccurate.** It assumes the previous
   request has finished when its pool is retired; one isolate serves
   overlapping requests.
-- **`.env.example` is stale.** Mentions Vercel and misdescribes `ADMIN_EMAIL`.
 
 ## Database
 
