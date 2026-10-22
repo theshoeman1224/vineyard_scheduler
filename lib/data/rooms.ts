@@ -2,6 +2,7 @@ import { asc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { requests, rooms, type Room } from "@/db/schema";
 import type { RoomInfo } from "@/lib/availability";
+import { roomWriteValues, type RoomUpsertInput } from "./roomValues";
 
 // Maps a rooms table row to the RoomInfo shape used across the app.
 export function toRoomInfo(r: Room): RoomInfo {
@@ -23,26 +24,10 @@ export async function getRooms(): Promise<RoomInfo[]> {
   return rows.map(toRoomInfo);
 }
 
-export async function upsertRoom(input: {
-  id?: number;
-  name: string;
-  beds: number;
-  displayOrder: number;
-  hotspotX?: number | null;
-  hotspotY?: number | null;
-  hotspotW?: number | null;
-  hotspotH?: number | null;
-}): Promise<void> {
+// Omitted hotspot fields are left as they are; see roomWriteValues.
+export async function upsertRoom(input: RoomUpsertInput): Promise<void> {
   const db = getDb();
-  const values = {
-    name: input.name,
-    beds: input.beds,
-    displayOrder: input.displayOrder,
-    hotspotX: input.hotspotX ?? null,
-    hotspotY: input.hotspotY ?? null,
-    hotspotW: input.hotspotW ?? null,
-    hotspotH: input.hotspotH ?? null,
-  };
+  const values = roomWriteValues(input);
   if (input.id) {
     await db.update(rooms).set(values).where(eq(rooms.id, input.id));
   } else {

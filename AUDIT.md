@@ -9,12 +9,6 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
 
 ---
 
-## Bugs affecting users
-
-- **Editing a room wipes its hotspot.** The room edit form omits the
-  hotspot fields and `upsertRoom` turns missing fields into `null`.
-  (`app/components/admin/RoomsAdmin.tsx`, `lib/data/rooms.ts`)
-
 ## Misalignments with AGENTS.md / README
 
 - **Email has no shared length limit.** No `MAX_EMAIL_LENGTH` constant; the

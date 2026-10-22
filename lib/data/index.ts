@@ -1,5 +1,6 @@
 // Barrel for the data layer, split by domain:
 // - rooms.ts        room inventory CRUD
+// - roomValues.ts   pure upsert payload → column mapping
 // - availability.ts bed math over a date range
 // - requests.ts     request lifecycle (create, decide, edit, cancel)
 // - blueprint.ts    the singleton floorplan row
@@ -11,6 +12,8 @@
 
 export type { RequestWithDetails, Tx } from "./shared";
 export { toRoomInfo, getRooms, upsertRoom, deleteRoom } from "./rooms";
+export { roomWriteValues } from "./roomValues";
+export type { RoomUpsertInput } from "./roomValues";
 export { availabilityFromBookings, getAvailabilityRange } from "./availability";
 export type { DecideResult, GroupDecisionRoomResult } from "./requests";
 export {
