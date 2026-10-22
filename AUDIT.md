@@ -9,6 +9,8 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
 
 ---
 
+All audit findings are fixed. What remains below needs a decision from
+you, or was deliberately left as is.
 
 ## Open questions for the owner
 
