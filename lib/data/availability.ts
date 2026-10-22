@@ -1,4 +1,4 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, between, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db";
 import { requestDates, requests, type RequestStatus } from "@/db/schema";
 import {
@@ -9,10 +9,11 @@ import {
 import { dateRange } from "@/lib/dates";
 import { getRooms } from "./rooms";
 
-// Returns bookings (pending/confirmed) that touch any of the given dates.
-async function getBookingsForDates(dates: string[]) {
+// Returns bookings (pending/confirmed) with nights inside [start, end].
+// A BETWEEN on the indexed date column, not IN (...one param per day...),
+// so the statement stays small however long the range is.
+async function getBookingsInRange(start: string, end: string) {
   const db = getDb();
-  if (dates.length === 0) return [];
   const rows = await db
     .select({
       requestId: requests.id,
@@ -24,7 +25,7 @@ async function getBookingsForDates(dates: string[]) {
     .innerJoin(requests, eq(requests.id, requestDates.requestId))
     .where(
       and(
-        inArray(requestDates.date, dates),
+        between(requestDates.date, start, end),
         inArray(requests.status, ["pending", "confirmed"]),
       ),
     );
@@ -65,6 +66,6 @@ export async function getAvailabilityRange(
   const roomList = await getRooms();
   const dates = dateRange(start, end);
   if (dates.length === 0) return {};
-  const bookings = await getBookingsForDates(dates);
+  const bookings = await getBookingsInRange(start, end);
   return availabilityFromBookings(roomList, bookings, dates);
 }

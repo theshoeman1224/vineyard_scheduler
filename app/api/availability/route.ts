@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
 import { getAvailabilityRange, getRooms } from "@/lib/data";
-import { addDaysStr, earliestBookableDate, isValidDateStr } from "@/lib/dates";
+import { availabilityRangeError, availabilityWindow } from "@/lib/availability";
 
+// Public availability for a date range. Defaults to the same window the
+// home page loads, and rejects ranges longer than that window.
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const start = url.searchParams.get("start") ?? earliestBookableDate();
-  const end = url.searchParams.get("end") ?? addDaysStr(earliestBookableDate(), 120);
+  const defaults = availabilityWindow();
+  const start = url.searchParams.get("start") ?? defaults.start;
+  const end = url.searchParams.get("end") ?? defaults.end;
 
-  if (!isValidDateStr(start) || !isValidDateStr(end)) {
-    return NextResponse.json({ error: "Invalid range" }, { status: 400 });
+  const error = availabilityRangeError(start, end);
+  if (error) {
+    return NextResponse.json({ error }, { status: 400 });
   }
 
   const [availability, rooms] = await Promise.all([

@@ -2,6 +2,34 @@
 // A confirmed request occupies ONE bed of its room for each of its dates.
 // Pending requests do not occupy beds but are surfaced for visibility.
 
+import { addDaysStr, daysBetween, earliestBookableDate, isValidDateStr } from "./dates";
+
+// How far ahead the calendar shows and accepts bookings. The page's first
+// load, the client refresh, the API default, and the calendar's last
+// selectable day all derive from this one window, so they cannot drift
+// (dates outside the loaded data would otherwise render as wrong states).
+export const AVAILABILITY_WINDOW_DAYS = 400;
+
+export type DateWindow = { start: string; end: string };
+
+export function availabilityWindow(now: Date = new Date()): DateWindow {
+  const start = earliestBookableDate(now);
+  return { start, end: addDaysStr(start, AVAILABILITY_WINDOW_DAYS) };
+}
+
+// Validates a requested availability range. The API is public, so the
+// span is capped: each day costs a map entry per room, and an unbounded
+// range was a cheap way to make the server build a huge response.
+export function availabilityRangeError(start: string, end: string): string | null {
+  if (!isValidDateStr(start) || !isValidDateStr(end)) return "Invalid range";
+  const span = daysBetween(start, end);
+  if (span < 0) return "Range end is before its start";
+  if (span > AVAILABILITY_WINDOW_DAYS) {
+    return `Range too long (max ${AVAILABILITY_WINDOW_DAYS} days)`;
+  }
+  return null;
+}
+
 export type RoomInfo = {
   id: number;
   name: string;

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   addDaysStr,
   dateRange,
+  daysBetween,
   dateTextParts,
   datesToText,
   earliestBookableDate,
@@ -143,5 +144,14 @@ describe("datesToText", () => {
   it("joins one date per line (roundtrip with parseDatesText)", () => {
     const dates = ["2026-01-01", "2026-01-02"];
     expect(parseDatesText(datesToText(dates))).toEqual(dates);
+  });
+});
+
+describe("daysBetween", () => {
+  it("counts whole days, including across DST changes and leap days", () => {
+    expect(daysBetween("2026-01-01", "2026-01-01")).toBe(0);
+    expect(daysBetween("2026-03-01", "2026-04-01")).toBe(31);
+    expect(daysBetween("2028-02-28", "2028-03-01")).toBe(2);
+    expect(daysBetween("2026-11-02", "2026-11-01")).toBe(-1);
   });
 });

@@ -21,9 +21,6 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
 
 - **No migrations.** Schema changes go to production via `db:push`;
   `drizzle/` is not committed.
-- **Unbounded `/api/availability` range.** Huge ranges exceed Postgres's
-  65,535 bind-parameter limit (500) and are a cheap DoS. Cap the range and
-  query with `BETWEEN` instead of `IN (…)`.
 - **Per-request pool churn on Workers.** Overlapping requests retire each
   other's pools, so most requests open a fresh connection. Consider
   Hyperdrive or Neon's serverless driver.
@@ -39,10 +36,6 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
 
 ## Frontend
 
-- **Availability window shrinks after refresh.** Initial load covers 400
-  days; `refresh()` uses the API default of 120. Dates outside the loaded
-  window show "full" in the list and "free" on the blueprint. The calendar
-  has no end bound.
 - **Shared-IP rate limit.** A household behind one router shares 5
   submissions / 15 min, and failed validations count against it.
 - **Blueprint not refreshed after upload.** Same image URL, so the admin

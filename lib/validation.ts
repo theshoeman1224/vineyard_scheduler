@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { earliestBookableDate, isValidDateStr } from "./dates";
+import { availabilityWindow } from "./availability";
 
 // Public API validation schemas.
 
@@ -16,10 +17,14 @@ const dateStr = z
   .string()
   .refine((s) => isValidDateStr(s), "Invalid date, expected YYYY-MM-DD");
 
-// Timezone-tolerant "not in the past": see earliestBookableDate.
+// Bookable nights: not in the past (timezone-tolerant, see
+// earliestBookableDate) and not beyond the availability window the
+// calendar offers, so the API accepts exactly what the UI can pick.
 const futureDateStr = z
   .string()
-  .refine((s) => isValidDateStr(s) && s >= earliestBookableDate(), "Date is in the past");
+  .refine((s) => isValidDateStr(s), "Invalid date, expected YYYY-MM-DD")
+  .refine((s) => s >= earliestBookableDate(), "Date is in the past")
+  .refine((s) => s <= availabilityWindow().end, "Date is too far ahead");
 
 // Linear-time email shape check. Replaces the equivalent single regex
 // /^[^@\s]+@[^@\s]+\.[^@\s]+$/, which backtracked super-linearly on

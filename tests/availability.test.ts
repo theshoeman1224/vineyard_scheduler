@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  AVAILABILITY_WINDOW_DAYS,
+  availabilityRangeError,
+  availabilityWindow,
   computeAvailability,
   countBookableDates,
   dayStatuses,
   roomCalendarStatus,
   roomDateStatus,
 } from "@/lib/availability";
+import { addDaysStr } from "@/lib/dates";
 
 const rooms = [
   { id: 1, name: "Bunk Room", beds: 2, displayOrder: 0 },
@@ -474,5 +478,31 @@ describe("dayStatuses", () => {
     );
     const overview = dayStatuses(avail, rooms, []);
     expect(overview.get("2026-03-03")).toBe("requested");
+  });
+});
+
+describe("availabilityWindow", () => {
+  it("starts at the earliest bookable date and spans AVAILABILITY_WINDOW_DAYS", () => {
+    const w = availabilityWindow(new Date(2026, 9, 21, 12));
+    expect(w.start).toBe("2026-10-20");
+    expect(w.end).toBe(addDaysStr("2026-10-20", AVAILABILITY_WINDOW_DAYS));
+  });
+});
+
+describe("availabilityRangeError", () => {
+  it("accepts a range up to the window length", () => {
+    expect(availabilityRangeError("2026-01-01", "2026-01-01")).toBeNull();
+    expect(
+      availabilityRangeError("2026-01-01", addDaysStr("2026-01-01", AVAILABILITY_WINDOW_DAYS)),
+    ).toBeNull();
+  });
+
+  it("rejects longer, reversed, or malformed ranges", () => {
+    expect(
+      availabilityRangeError("2026-01-01", addDaysStr("2026-01-01", AVAILABILITY_WINDOW_DAYS + 1)),
+    ).toMatch(/too long/);
+    expect(availabilityRangeError("1900-01-01", "2900-01-01")).toMatch(/too long/);
+    expect(availabilityRangeError("2026-02-01", "2026-01-01")).toMatch(/before/);
+    expect(availabilityRangeError("2026-02-30", "2026-03-01")).toBe("Invalid range");
   });
 });

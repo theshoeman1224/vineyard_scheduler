@@ -44,6 +44,16 @@ export function addDaysStr(s: string, n: number): string {
   return toDateString(d);
 }
 
+// Whole days from a to b (negative if b is earlier). Computed in UTC so a
+// daylight-saving change between the dates cannot skew the count.
+export function daysBetween(a: string, b: string): number {
+  const utc = (s: string) => {
+    const [y, m, d] = s.split("-").map(Number);
+    return Date.UTC(y, m - 1, d);
+  };
+  return Math.round((utc(b) - utc(a)) / 86_400_000);
+}
+
 export function dateRange(start: string, endInclusive: string): string[] {
   if (!isValidDateStr(start) || !isValidDateStr(endInclusive)) return [];
   if (start > endInclusive) return [];

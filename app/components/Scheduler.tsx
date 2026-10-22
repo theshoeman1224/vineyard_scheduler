@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState } from "react";
-import type { AvailabilityMap, RoomInfo } from "@/lib/availability";
+import type { AvailabilityMap, DateWindow, RoomInfo } from "@/lib/availability";
 import { sortUniqueDates } from "@/lib/dates";
 import { apiGet } from "@/app/lib/apiClient";
 import type { RequestPublic } from "@/app/lib/requestTypes";
@@ -16,10 +16,14 @@ export function Scheduler({
   initialRooms,
   initialAvailability,
   initialRequests,
+  dateWindow,
 }: {
   readonly initialRooms: RoomInfo[];
   readonly initialAvailability: AvailabilityMap;
   readonly initialRequests: RequestPublic[];
+  // The date window the server loaded; refreshes reuse it so the
+  // calendar never loses data for dates it still lets you pick.
+  readonly dateWindow: DateWindow;
 }) {
   // Rooms never change client-side; only availability and requests refresh.
   const rooms = initialRooms;
@@ -40,7 +44,9 @@ export function Scheduler({
   const refresh = useCallback(async () => {
     // Keep stale data on failure — a blip shouldn't blank the UI.
     const [availRes, reqRes] = await Promise.all([
-      apiGet<{ availability?: AvailabilityMap }>("/api/availability"),
+      apiGet<{ availability?: AvailabilityMap }>(
+        `/api/availability?start=${dateWindow.start}&end=${dateWindow.end}`,
+      ),
       apiGet<{ requests?: RequestPublic[] }>("/api/requests"),
     ]);
     if (availRes.ok) {
@@ -49,7 +55,7 @@ export function Scheduler({
     if (reqRes.ok) {
       setRequests(reqRes.data.requests ?? []);
     }
-  }, []);
+  }, [dateWindow.start, dateWindow.end]);
 
   const onDatesChange = useCallback((dates: string[]) => {
     setSelectedDates(sortUniqueDates(dates));
@@ -109,6 +115,7 @@ export function Scheduler({
           rooms={rooms}
           selectedDates={selectedDates}
           roomIds={roomIds}
+          lastDate={dateWindow.end}
           onChange={onDatesChange}
         />
         <section className="rounded-lg border border-edge bg-card p-4 shadow-sm">

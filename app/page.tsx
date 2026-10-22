@@ -1,17 +1,17 @@
 import { Scheduler } from "@/app/components/Scheduler";
 import { getAvailabilityRange, getRequestsCurrent, getRooms } from "@/lib/data";
-import { addDaysStr, earliestBookableDate } from "@/lib/dates";
+import { availabilityWindow } from "@/lib/availability";
 import { toPublicRequest } from "@/app/lib/requestTypes";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const start = earliestBookableDate();
-  const end = addDaysStr(start, 400);
+  // The client refreshes and bounds its calendar with this same window.
+  const dateWindow = availabilityWindow();
   const [rooms, availability, requests] = await Promise.all([
     getRooms(),
-    getAvailabilityRange(start, end),
-    getRequestsCurrent(start),
+    getAvailabilityRange(dateWindow.start, dateWindow.end),
+    getRequestsCurrent(dateWindow.start),
   ]);
 
   return (
@@ -20,6 +20,7 @@ export default async function Home() {
         initialRooms={rooms}
         initialAvailability={availability}
         initialRequests={requests.map((r) => toPublicRequest(r))}
+        dateWindow={dateWindow}
       />
     </main>
   );

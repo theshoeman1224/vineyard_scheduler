@@ -15,15 +15,19 @@ export function CalendarCard({
   rooms,
   selectedDates,
   roomIds,
+  lastDate,
   onChange,
 }: {
   readonly availability: AvailabilityMap;
   readonly rooms: RoomInfo[];
   readonly selectedDates: string[];
   readonly roomIds: number[];
+  // Last day with loaded availability; later days are not selectable.
+  readonly lastDate: string;
   readonly onChange: (dates: string[]) => void;
 }) {
   const today = new Date();
+  const last = parseDate(lastDate);
   const [month, setMonth] = useState<Date>(today);
 
   const statusByDate = useMemo(
@@ -84,7 +88,8 @@ export function CalendarCard({
         onSelect={(dates: Date[] | undefined) => {
           onChange((dates ?? []).map((d) => toDateString(d)));
         }}
-        disabled={{ before: today }}
+        endMonth={last}
+        disabled={[{ before: today }, { after: last }]}
         modifiers={{
           limited: [...modifiers.limitedDays, ...modifiers.limitedRequestedDays],
           full: modifiers.fullDays,

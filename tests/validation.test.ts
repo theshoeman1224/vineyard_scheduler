@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createRequestSchema, MAX_EMAIL_LENGTH, requestEditSchema } from "@/lib/validation";
 import { isValidDateStr, todayStr, addDaysStr } from "@/lib/dates";
+import { availabilityWindow } from "@/lib/availability";
 
 const FUTURE = addDaysStr(todayStr(), 10);
 const FUTURE2 = addDaysStr(todayStr(), 11);
@@ -141,6 +142,12 @@ describe("past-date tolerance", () => {
 
   it("rejects anything older", () => {
     expect(withDate(addDaysStr(todayStr(), -2)).success).toBe(false);
+  });
+
+  it("rejects nights beyond the calendar's availability window", () => {
+    const { end } = availabilityWindow();
+    expect(withDate(end).success).toBe(true);
+    expect(withDate(addDaysStr(end, 1)).success).toBe(false);
   });
 });
 
