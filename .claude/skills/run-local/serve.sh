@@ -65,8 +65,15 @@ fi
 if [ -z "$(sql "SELECT 1 FROM pg_database WHERE datname='$TEST_DB'")" ]; then
   sql "CREATE DATABASE $TEST_DB" >/dev/null
 fi
-# Both are idempotent: push applies schema changes, seed skips existing rooms.
-DATABASE_URL="$TEST_URL" "$BIN/drizzle-kit" push --force >/dev/null
+# Same schema path as production: committed migrations, never push. A
+# database left over from the old push workflow is baselined first. All
+# three steps are idempotent (seed skips rooms that already exist).
+legacy=$(docker exec "$CONTAINER" psql -U postgres -d "$TEST_DB" -tAc \
+  "SELECT to_regclass('public.rooms') IS NOT NULL AND to_regclass('drizzle.__drizzle_migrations') IS NULL")
+if [ "$legacy" = t ]; then
+  DATABASE_URL="$TEST_URL" npm run --silent db:baseline
+fi
+DATABASE_URL="$TEST_URL" "$BIN/drizzle-kit" migrate >/dev/null
 DATABASE_URL="$TEST_URL" npm run --silent seed
 
 # Free the port. `next dev` is a chain (next -> next-server, plus an

@@ -21,7 +21,7 @@ Scripts live next to this file. Run them from anywhere in the repo.
 Run it with `run_in_background`; it ends in `exec next dev`. Flags:
 `--fresh` recreates `house_test`, `--no-admin-email` runs with
 `ADMIN_EMAIL` empty, `--port N` changes the port. It starts (or creates)
-the container, applies the schema with `drizzle-kit push`, seeds rooms,
+the container, applies the committed migrations with `drizzle-kit migrate`, seeds rooms,
 and frees the port first.
 
 Wait for it by polling, not sleeping:

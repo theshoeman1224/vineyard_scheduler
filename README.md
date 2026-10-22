@@ -43,7 +43,7 @@ Three hosted services back the app. Each one has a single job:
 | Service | What it does here |
 | --- | --- |
 | **Cloudflare Workers** | Hosts the site (custom domain `beachroad.casa`). The Next.js app is packaged for Workers with `opennextjs-cloudflare`: `npm run deploy` builds and publishes, `npm run preview` runs the worker locally. Production secrets live on the worker, managed with `wrangler secret put` (see *Managing secrets*). |
-| **Neon** | Managed Postgres and the app's only data store: rooms, requests, requested dates, and the uploaded blueprint image. The app connects with the pooled connection string from `DATABASE_URL` and queries it through Drizzle ORM (`npm run db:push` applies schema changes). The repo vendors a `pg-cloudflare` shim so the `pg` driver can reach Postgres over WebSockets from inside a Worker. |
+| **Neon** | Managed Postgres and the app's only data store: rooms, requests, requested dates, and the uploaded blueprint image. The app connects with the pooled connection string from `DATABASE_URL` and queries it through Drizzle ORM. Schema changes are committed SQL migrations in `drizzle/` (see *Schema changes*). The repo vendors a `pg-cloudflare` shim so the `pg` driver can reach Postgres over WebSockets from inside a Worker. |
 | **Resend** | Transactional email. It sends every message the app produces: the admin notification with signed Approve/Deny links, decision and edit notices to requesters, and withdrawal confirmations. Email is optional: with no `RESEND_API_KEY` the site works normally and only email is skipped (`emailQueued: false`). |
 
 Everything else (calendar, availability math, admin panel) runs entirely in
@@ -57,7 +57,7 @@ and CI, so `nvm use` picks the right version.
 ```bash
 npm install
 cp .env.example .env   # fill in DATABASE_URL + SIGNING_SECRET + ADMIN_PASSWORD
-npm run db:push        # create tables
+npm run db:migrate     # create tables
 npm run seed           # optional starter rooms
 npm run dev
 ```
@@ -132,11 +132,32 @@ First-time setup:
    ```bash
    npm run deploy   # builds and deploys via opennextjs-cloudflare
    ```
-5. Push the schema to the production database once (locally, with the prod
-   `DATABASE_URL` exported): `npm run db:push`, then `npm run seed` for the
-   template rooms.
+5. Create the tables in the production database once (locally, with the
+   prod `DATABASE_URL` exported): `npm run db:migrate`, then `npm run seed`
+   for the template rooms.
 6. Sign in at `/admin` with `ADMIN_PASSWORD`, upload the blueprint image,
    create rooms, and drag a hotspot rectangle over each room.
+
+## Schema changes
+
+The schema lives in `db/schema.ts`; every change ships as a committed SQL
+migration in `drizzle/`, so each database moves through the same reviewed
+steps.
+
+```bash
+npm run db:generate -- --name <what-changed>   # writes drizzle/NNNN_<name>.sql
+npm run db:migrate                             # applies pending migrations
+```
+
+Review the generated SQL before committing it. Apply migrations to
+production (with the prod `DATABASE_URL` exported) before deploying code
+that depends on them.
+
+**Databases created before migrations existed** (with the old
+`db:push`) already have the tables in `0000_baseline.sql`. Run
+`npm run db:baseline` once to record that, then `npm run db:migrate`.
+The baseline step refuses an empty database and does nothing on one that
+already tracks migrations.
 
 ## Data model
 
