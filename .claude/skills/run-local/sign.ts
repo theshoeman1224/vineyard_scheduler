@@ -1,7 +1,7 @@
 // Prints a signed approve/deny token for a submission group — the same
 // token the admin email links carry. Email is disabled locally, so this
 // is how the smoke test reaches /api/decide/<token>.
-// Usage: SIGNING_SECRET=... npx tsx sign.ts <groupId> <approve|deny>
+// Usage: SIGNING_SECRET=... node_modules/.bin/tsx sign.ts <groupId> <approve|deny>
 import { signDecideToken } from "../../../lib/tokens";
 
 const [groupId, action] = process.argv.slice(2);

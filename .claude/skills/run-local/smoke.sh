@@ -28,7 +28,8 @@ post() {
   curl -s -X POST "$B$1" -H 'content-type: application/json' \
     -H "x-forwarded-for: $(ip)" -b "$JAR" -c "$JAR" -d "$2"
 }
-decide() { curl -s -X POST "$B/api/decide/$(npx tsx "$DIR/sign.ts" "$1" "$2")"; }
+# Project-local tsx, not npx (which can fetch and run unvetted packages).
+decide() { curl -s -X POST "$B/api/decide/$("$ROOT/node_modules/.bin/tsx" "$DIR/sign.ts" "$1" "$2")"; }
 has() { grep -q "$1" && echo yes || echo no; }
 check() {
   if [ "$2" = "$3" ]; then

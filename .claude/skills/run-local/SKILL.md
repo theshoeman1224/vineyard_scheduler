@@ -79,7 +79,11 @@ docker exec house-sched-pg psql -U postgres -c 'DROP DATABASE IF EXISTS house_te
 
 ## Gotchas
 
-- **Kill the whole `next dev` chain.** `npm exec → next → next-server`:
+- **Never use `npx` here.** It downloads and runs any package that isn't
+  installed locally (SonarCloud rule `shell:S6505`). The scripts call
+  `node_modules/.bin/*` and stop with a message if a tool is missing.
+- **Kill the whole `next dev` chain.** `next → next-server`, plus an
+  `npm exec` wrapper when started through npm:
   killing only the listener can leave the old server on the port, and the
   next launch dies with `EADDRINUSE` while your tests silently hit the old
   one. `serve.sh` handles this. When stopping by hand, verify with `ss`.

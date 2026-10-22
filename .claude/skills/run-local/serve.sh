@@ -31,6 +31,14 @@ done
 
 [ -f .env ] || { echo ".env missing — copy .env.example and fill it in" >&2; exit 1; }
 
+# Tools run from the project's own install, never via npx: npx silently
+# downloads and runs any package missing locally, lifecycle scripts
+# included (Sonar shell:S6505). A missing binary should fail loudly.
+BIN="$ROOT/node_modules/.bin"
+for tool in drizzle-kit next tsx; do
+  [ -x "$BIN/$tool" ] || { echo "$BIN/$tool missing — run: npm ci --ignore-scripts" >&2; exit 1; }
+done
+
 CONTAINER=house-sched-pg
 TEST_DB=house_test
 BASE_URL=$(grep '^DATABASE_URL=' .env | cut -d= -f2- | tr -d '"')
@@ -58,10 +66,11 @@ if [ -z "$(sql "SELECT 1 FROM pg_database WHERE datname='$TEST_DB'")" ]; then
   sql "CREATE DATABASE $TEST_DB" >/dev/null
 fi
 # Both are idempotent: push applies schema changes, seed skips existing rooms.
-DATABASE_URL="$TEST_URL" npx drizzle-kit push --force >/dev/null
+DATABASE_URL="$TEST_URL" "$BIN/drizzle-kit" push --force >/dev/null
 DATABASE_URL="$TEST_URL" npm run --silent seed
 
-# Free the port. `next dev` is a chain (npm exec -> next -> next-server);
+# Free the port. `next dev` is a chain (next -> next-server, plus an
+# `npm exec` wrapper when started via npm/npx);
 # killing only the listener can leave the parent holding the port, so kill
 # the listener plus its `next` ancestors, then confirm with ss.
 pid=$(ss -ltnpH "sport = :$PORT" | sed -n 's/.*pid=\([0-9]*\).*/\1/p' | head -1)
@@ -91,4 +100,4 @@ if [ "$NO_ADMIN" = 1 ]; then
 fi
 echo "Serving http://localhost:$PORT (database: $TEST_DB, email disabled$note)"
 exec env DATABASE_URL="$TEST_URL" RESEND_API_KEY= APP_URL="http://localhost:$PORT" \
-  "${extra[@]}" npx next dev -p "$PORT"
+  "${extra[@]}" "$BIN/next" dev -p "$PORT"
