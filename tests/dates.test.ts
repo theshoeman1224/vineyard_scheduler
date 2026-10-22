@@ -4,6 +4,7 @@ import {
   dateRange,
   dateTextParts,
   datesToText,
+  earliestBookableDate,
   formatDateHuman,
   isValidDateStr,
   parseDate,
@@ -91,6 +92,16 @@ describe("formatDateHuman", () => {
 describe("todayStr", () => {
   it("formats a known date", () => {
     expect(todayStr(new Date(2026, 8, 18))).toBe("2026-09-18");
+  });
+});
+
+describe("earliestBookableDate", () => {
+  it("is the server's yesterday, so UTC-12 visitors' today is still bookable", () => {
+    expect(earliestBookableDate(new Date(2026, 8, 18, 3, 0))).toBe("2026-09-17");
+  });
+
+  it("crosses month and year boundaries", () => {
+    expect(earliestBookableDate(new Date(2027, 0, 1))).toBe("2026-12-31");
   });
 });
 

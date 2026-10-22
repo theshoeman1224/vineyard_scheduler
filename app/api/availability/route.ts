@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { getAvailabilityRange, getRooms } from "@/lib/data";
-import { addDaysStr, isValidDateStr, todayStr } from "@/lib/dates";
+import { addDaysStr, earliestBookableDate, isValidDateStr } from "@/lib/dates";
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const start = url.searchParams.get("start") ?? todayStr();
-  const end = url.searchParams.get("end") ?? addDaysStr(todayStr(), 120);
+  const start = url.searchParams.get("start") ?? earliestBookableDate();
+  const end = url.searchParams.get("end") ?? addDaysStr(earliestBookableDate(), 120);
 
   if (!isValidDateStr(start) || !isValidDateStr(end)) {
     return NextResponse.json({ error: "Invalid range" }, { status: 400 });

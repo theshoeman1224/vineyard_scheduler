@@ -23,6 +23,16 @@ export function todayStr(now: Date = new Date()): string {
   return toDateString(now);
 }
 
+// The earliest night the server accepts or shows as bookable. Visitors
+// pick dates in their own timezone, but the server's "today" is UTC on
+// Workers. The westernmost timezone (UTC-12) is at most one calendar day
+// behind UTC, so a visitor's local "today" is never earlier than the
+// server's yesterday. Accepting from there means nobody's today is
+// rejected as "in the past"; the browser still blocks earlier local days.
+export function earliestBookableDate(now: Date = new Date()): string {
+  return addDaysStr(todayStr(now), -1);
+}
+
 export function parseDate(s: string): Date {
   const [y, m, d] = s.split("-").map(Number);
   return new Date(y, m - 1, d);

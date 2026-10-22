@@ -49,8 +49,6 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
   days; `refresh()` uses the API default of 120. Dates outside the loaded
   window show "full" in the list and "free" on the blueprint. The calendar
   has no end bound.
-- **Timezone mismatch.** The client's "today" is local; the server validates
-  against UTC (Workers), rejecting "today" for US evening users.
 - **Notes are public.** `RequestPublic` includes `note`, though the form
   presents it as admin-facing.
 - **Shared-IP rate limit.** A household behind one router shares 5

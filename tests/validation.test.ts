@@ -130,6 +130,20 @@ describe("createRequestSchema roomIds", () => {
   });
 });
 
+describe("past-date tolerance", () => {
+  const withDate = (d: string) =>
+    createRequestSchema.safeParse({ name: "Josh", roomIds: [1], dates: [d] });
+
+  it("accepts the server's yesterday (a visitor's today in an earlier timezone)", () => {
+    expect(withDate(addDaysStr(todayStr(), -1)).success).toBe(true);
+    expect(withDate(todayStr()).success).toBe(true);
+  });
+
+  it("rejects anything older", () => {
+    expect(withDate(addDaysStr(todayStr(), -2)).success).toBe(false);
+  });
+});
+
 describe("email shape", () => {
   const withEmail = (email: string) =>
     createRequestSchema.safeParse({

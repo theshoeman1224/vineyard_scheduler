@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isValidDateStr, todayStr } from "./dates";
+import { earliestBookableDate, isValidDateStr } from "./dates";
 
 // Public API validation schemas.
 
@@ -16,9 +16,10 @@ const dateStr = z
   .string()
   .refine((s) => isValidDateStr(s), "Invalid date, expected YYYY-MM-DD");
 
+// Timezone-tolerant "not in the past": see earliestBookableDate.
 const futureDateStr = z
   .string()
-  .refine((s) => isValidDateStr(s) && s >= todayStr(), "Date is in the past");
+  .refine((s) => isValidDateStr(s) && s >= earliestBookableDate(), "Date is in the past");
 
 // Linear-time email shape check. Replaces the equivalent single regex
 // /^[^@\s]+@[^@\s]+\.[^@\s]+$/, which backtracked super-linearly on
