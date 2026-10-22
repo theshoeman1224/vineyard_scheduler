@@ -1,7 +1,8 @@
 import { asc, eq, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { requestDates, requests, rooms, type RequestStatus } from "@/db/schema";
-import { randomToken, randomUUID } from "@/lib/tokens";
+import { randomToken, randomUUID, type DecideAction } from "@/lib/tokens";
+import { planRowDecision } from "./decision";
 import {
   baseRequestQuery,
   attachDates,
@@ -13,11 +14,16 @@ export type DecideResult =
   | { ok: true }
   | { ok: false; error: string };
 
+// `ok`: the row ended in the state the action asked for.
+// `changed`: this call updated the row (drives requester notification).
+// `status`: the row's status after the call.
 export type GroupDecisionRoomResult = {
   roomId: number;
   roomName: string;
   requestId: number;
   ok: boolean;
+  changed: boolean;
+  status: RequestStatus;
   error?: string;
 };
 
@@ -106,12 +112,13 @@ export async function createRequest(
   });
 }
 
-// Approve/deny a whole submission group. Each room is confirmed
-// independently with a race-safe capacity re-check (locking its room row);
-// a room that no longer has beds stays untouched and is reported.
+// Approve/deny a whole submission group. Only pending rows change (see
+// planRowDecision for rows the admin already decided). Each room is
+// confirmed independently with a race-safe capacity re-check (locking its
+// room row); a room that no longer has beds stays pending and is reported.
 export async function decideGroup(
   groupId: string,
-  action: "approve" | "deny",
+  action: DecideAction,
 ): Promise<GroupDecisionRoomResult[]> {
   const db = getDb();
   return db.transaction(async (tx) => {
@@ -133,25 +140,25 @@ export async function decideGroup(
     const results: GroupDecisionRoomResult[] = [];
 
     for (const req of rows) {
-      if (req.status === "denied") {
-        results.push({ roomId: req.roomId, roomName: req.roomName, requestId: req.id, ok: true });
+      const base = { roomId: req.roomId, roomName: req.roomName, requestId: req.id };
+      const plan = planRowDecision(req.status, action);
+
+      if (plan.kind === "unchanged") {
+        results.push({ ...base, ok: true, changed: false, status: req.status });
         continue;
       }
 
-      if (action === "deny") {
-        if (req.status === "pending") {
-          await tx
-            .update(requests)
-            .set({ status: "denied", updatedAt: new Date() })
-            .where(eq(requests.id, req.id));
-        }
-        results.push({ roomId: req.roomId, roomName: req.roomName, requestId: req.id, ok: true });
+      if (plan.kind === "conflict") {
+        results.push({ ...base, ok: false, changed: false, status: req.status, error: plan.error });
         continue;
       }
 
-      // approve — already-confirmed rooms are a no-op success.
-      if (req.status === "confirmed") {
-        results.push({ roomId: req.roomId, roomName: req.roomName, requestId: req.id, ok: true });
+      if (plan.kind === "deny") {
+        await tx
+          .update(requests)
+          .set({ status: "denied", updatedAt: new Date() })
+          .where(eq(requests.id, req.id));
+        results.push({ ...base, ok: true, changed: true, status: "denied" });
         continue;
       }
 
@@ -168,10 +175,10 @@ export async function decideGroup(
 
       if (full) {
         results.push({
-          roomId: req.roomId,
-          roomName: req.roomName,
-          requestId: req.id,
+          ...base,
           ok: false,
+          changed: false,
+          status: req.status,
           error: `No beds left in ${req.roomName} on ${full}`,
         });
         continue;
@@ -181,7 +188,7 @@ export async function decideGroup(
         .update(requests)
         .set({ status: "confirmed", updatedAt: new Date() })
         .where(eq(requests.id, req.id));
-      results.push({ roomId: req.roomId, roomName: req.roomName, requestId: req.id, ok: true });
+      results.push({ ...base, ok: true, changed: true, status: "confirmed" });
     }
 
     return results;

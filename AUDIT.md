@@ -11,12 +11,6 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
 
 ## Bugs affecting users
 
-- **Requester decision email can be wrong.** `decideGroup` reports
-  every row as `ok` on "Deny all", and `groupDecisionEmail` labels ok rows
-  "Approved", so a denied requester is told their rooms were approved.
-  Approving an already-denied row reports success while the row stays
-  denied, and re-clicking a decision link re-sends the email.
-  (`lib/data/requests.ts`, `lib/emails.ts`, `app/api/decide/[token]/route.ts`)
 - **Editing a room wipes its hotspot.** The room edit form omits the
   hotspot fields and `upsertRoom` turns missing fields into `null`.
   (`app/components/admin/RoomsAdmin.tsx`, `lib/data/rooms.ts`)

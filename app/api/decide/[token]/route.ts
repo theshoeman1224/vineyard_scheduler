@@ -1,4 +1,4 @@
-import { decideGroup, getGroupRequests } from "@/lib/data";
+import { decideGroup, getGroupRequests, shouldNotifyRequester } from "@/lib/data";
 import { verifyDecideToken } from "@/lib/tokens";
 import { signingSecret } from "@/lib/env";
 import { groupDecisionEmail } from "@/lib/emails";
@@ -34,11 +34,12 @@ export async function POST(req: Request, ctx: { params: Promise<{ token: string 
   const succeeded = results.filter((r) => r.ok);
   const failed = results.filter((r) => !r.ok);
 
-  // Notify the requester with a per-room summary (they shared one email).
-  // The decision itself is already committed; a mailer failure must not
-  // turn this page into an error.
+  // Notify the requester with a per-room summary (they shared one email),
+  // but only when this click changed something — re-clicking a link must
+  // not re-send. The decision itself is already committed; a mailer
+  // failure must not turn this page into an error.
   const email = group.find((r) => r.email)?.email;
-  if (email) {
+  if (email && shouldNotifyRequester(results)) {
     await trySendEmail(
       email,
       groupDecisionEmail(
@@ -48,9 +49,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ token: string 
           rooms: group.map((r) => r.roomName),
           dates: group[0].dates,
         },
+        payload.a,
         results.map((r) => ({
           roomName: r.roomName,
-          ok: r.ok,
+          status: r.status,
           error: r.error,
         })),
       ),
@@ -71,9 +73,11 @@ export async function POST(req: Request, ctx: { params: Promise<{ token: string 
       .join("<br/>");
     body += `<p style="color:${COLOR_RED}"><strong>Could not be ${verb}:</strong></p>
       <p>${failedList}</p>
-      <p>Those requests are unchanged and still pending; manage them in the admin panel.</p>`;
+      <p>Those rooms were left as they were; manage them in the admin panel.</p>`;
   }
-  body += `<p style="color:#666;font-size:13px;">The requester has been notified (if they left an email).</p>`;
+  body += shouldNotifyRequester(results)
+    ? `<p style="color:#666;font-size:13px;">The requester has been notified (if they left an email).</p>`
+    : `<p style="color:#666;font-size:13px;">Nothing changed, so no email was sent.</p>`;
 
   let title: string;
   if (failed.length === 0) {

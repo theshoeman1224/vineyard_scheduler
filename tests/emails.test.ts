@@ -88,22 +88,46 @@ describe("requestCancelledByUserEmail", () => {
 
 describe("groupDecisionEmail", () => {
   it("summarizes approved rooms and capacity failures", () => {
-    const msg = groupDecisionEmail(req, [
-      { roomName: "Bunk Room", ok: true },
-      { roomName: "Loft", ok: false, error: "No beds left in Loft on Jul 1" },
+    const msg = groupDecisionEmail(req, "approve", [
+      { roomName: "Bunk Room", status: "confirmed" },
+      { roomName: "Loft", status: "pending", error: "No beds left in Loft on Jul 1" },
     ]);
-    expect(msg.subject).toContain("1 of 2");
+    expect(msg.subject).toContain("1 of 2 rooms approved");
     expect(msg.html).toContain("Bunk Room");
     expect(msg.html).toContain("No beds left in Loft on Jul 1");
     expect(msg.text).toContain("Approved: Bunk Room");
+    expect(msg.text).toContain("Still pending: Loft");
   });
 
   it("handles all-approved", () => {
-    const msg = groupDecisionEmail(req, [
-      { roomName: "Bunk Room", ok: true },
-      { roomName: "Loft", ok: true },
+    const msg = groupDecisionEmail(req, "approve", [
+      { roomName: "Bunk Room", status: "confirmed" },
+      { roomName: "Loft", status: "confirmed" },
     ]);
-    expect(msg.subject).toContain("2 of 2");
+    expect(msg.subject).toContain("2 of 2 rooms approved");
     expect(msg.html).toContain("Loft");
+  });
+
+  it("never says approved when the rooms were denied", () => {
+    const msg = groupDecisionEmail(req, "deny", [
+      { roomName: "Bunk Room", status: "denied" },
+      { roomName: "Loft", status: "denied" },
+    ]);
+    expect(msg.subject).toContain("2 of 2 rooms denied");
+    expect(msg.subject).not.toContain("approved");
+    expect(msg.html).not.toContain("Approved");
+    expect(msg.text).toContain("Denied: Bunk Room, Loft");
+    expect(msg.text).not.toContain("Approved");
+  });
+
+  it("lists a room by its real status when the link's action did not apply", () => {
+    // "Approve all" on a group where the admin had already denied Loft.
+    const msg = groupDecisionEmail(req, "approve", [
+      { roomName: "Bunk Room", status: "confirmed" },
+      { roomName: "Loft", status: "denied", error: "Already denied" },
+    ]);
+    expect(msg.subject).toContain("1 of 2 rooms approved");
+    expect(msg.text).toContain("Approved: Bunk Room");
+    expect(msg.text).toContain("Denied: Loft");
   });
 });

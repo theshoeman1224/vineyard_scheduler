@@ -5,6 +5,7 @@
 // - blueprint.ts    the singleton floorplan row
 // - shared.ts       request query building and date attachment
 // - capacity.ts     race-safe bed capacity checks
+// - decision.ts     pure rules for email-link approve/deny per row
 //
 // Keeps existing `@/lib/data` imports working unchanged.
 
@@ -25,3 +26,5 @@ export {
   deleteRequestAsAdmin,
 } from "./requests";
 export { getBlueprintRow, saveBlueprint } from "./blueprint";
+export { planRowDecision, shouldNotifyRequester } from "./decision";
+export type { RowDecision } from "./decision";

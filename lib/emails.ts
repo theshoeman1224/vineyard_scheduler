@@ -85,40 +85,60 @@ Dates: ${req.dates.join(", ")}`;
   return { subject, html, text };
 }
 
-// Summary email after a group decision (some rooms may have succeeded and
-// others not, e.g. when a room filled up).
+// Summary email after an "Approve all" / "Deny all" click. Rooms are
+// listed by their status AFTER the decision, not by the action, so the
+// requester is never told a room was approved when it was denied (or
+// left as previously decided). Pending rooms carry their reason, e.g. a
+// room that filled up.
 export function groupDecisionEmail(
   req: ReqInfo,
-  results: { roomName: string; ok: boolean; error?: string }[],
+  action: "approve" | "deny",
+  results: {
+    roomName: string;
+    status: "pending" | "confirmed" | "denied";
+    error?: string;
+  }[],
 ): EmailMessage {
-  const approved = results.filter((r) => r.ok).map((r) => r.roomName);
-  const failed = results.filter((r) => !r.ok);
+  const approved = results.filter((r) => r.status === "confirmed").map((r) => r.roomName);
+  const denied = results.filter((r) => r.status === "denied").map((r) => r.roomName);
+  const pending = results.filter((r) => r.status === "pending");
   const parts: string[] = [];
   if (approved.length > 0) {
     parts.push(
       `<p><strong style="color:#16a34a">Approved:</strong><br/>${listRooms(approved)}</p>`,
     );
   }
-  for (const f of failed) {
+  if (denied.length > 0) {
     parts.push(
-      `<p><strong style="color:#dc2626">Not confirmed: ${esc(f.roomName)}</strong> — ${esc(f.error ?? "unknown reason")}</p>`,
+      `<p><strong style="color:#dc2626">Denied:</strong><br/>${listRooms(denied)}</p>`,
     );
   }
-  const subject = `Your request: ${approved.length} of ${results.length} room${results.length === 1 ? "" : "s"} approved`;
+  for (const p of pending) {
+    parts.push(
+      `<p><strong style="color:#b45309">Still pending: ${esc(p.roomName)}</strong> — ${esc(p.error ?? "awaiting a decision")}</p>`,
+    );
+  }
+  const plural = results.length === 1 ? "" : "s";
+  const subject =
+    action === "approve"
+      ? `Your request: ${approved.length} of ${results.length} room${plural} approved`
+      : `Your request: ${denied.length} of ${results.length} room${plural} denied`;
   const html = wrap(
     `<p>Hi ${esc(req.name)},</p>
      <p>The admin responded to your request for these dates:</p>
      <p><strong>Dates:</strong><br/>${listDates(req.dates)}</p>
-     ${parts.join("")}`,
+     ${parts.join("")}
+     ${denied.length > 0 ? "<p>Reach out to the admin if you think this was a mistake.</p>" : ""}`,
   );
-  const failedLines = failed
-    .map((f) => `Not confirmed: ${f.roomName} — ${f.error}`)
-    .join("\n");
+  const lines = [
+    approved.length > 0 ? `Approved: ${approved.join(", ")}` : "",
+    denied.length > 0 ? `Denied: ${denied.join(", ")}` : "",
+    ...pending.map((p) => `Still pending: ${p.roomName} — ${p.error ?? "awaiting a decision"}`),
+  ].filter(Boolean);
   const text = `Hi ${req.name},
 The admin responded to your request.
 Dates: ${req.dates.join(", ")}
-Approved: ${approved.join(", ") || "none"}
-${failedLines}`;
+${lines.join("\n")}`;
   return { subject, html, text };
 }
 
