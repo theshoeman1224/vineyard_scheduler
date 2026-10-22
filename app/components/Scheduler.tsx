@@ -17,6 +17,7 @@ export function Scheduler({
   initialAvailability,
   initialRequests,
   dateWindow,
+  blueprintVersion,
 }: {
   readonly initialRooms: RoomInfo[];
   readonly initialAvailability: AvailabilityMap;
@@ -24,6 +25,8 @@ export function Scheduler({
   // The date window the server loaded; refreshes reuse it so the
   // calendar never loses data for dates it still lets you pick.
   readonly dateWindow: DateWindow;
+  // null when no blueprint has been uploaded.
+  readonly blueprintVersion: string | null;
 }) {
   // Rooms never change client-side; only availability and requests refresh.
   const rooms = initialRooms;
@@ -148,6 +151,7 @@ export function Scheduler({
             />
           ) : (
             <BlueprintMap
+              blueprintVersion={blueprintVersion}
               rooms={rooms}
               availability={availability}
               selectedDates={selectedDates}

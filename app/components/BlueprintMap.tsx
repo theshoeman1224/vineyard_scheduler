@@ -6,14 +6,17 @@ import {
   roomCalendarStatus,
 } from "@/lib/availability";
 import { bedsLabel, hotspotClass, roomsSelectedHint } from "@/app/lib/roomText";
+import { blueprintSrc } from "@/lib/blueprint";
 
 export function BlueprintMap({
+  blueprintVersion,
   rooms,
   availability,
   selectedDates,
   selectedRoomIds,
   onSelect,
 }: {
+  readonly blueprintVersion: string | null;
   readonly rooms: RoomInfo[];
   readonly availability: AvailabilityMap;
   readonly selectedDates: string[];
@@ -28,7 +31,7 @@ export function BlueprintMap({
       r.hotspotH != null,
   );
 
-  if (withHotspots.length === 0) {
+  if (withHotspots.length === 0 || blueprintVersion === null) {
     return (
       <div className="rounded-md border border-dashed border-edge p-6 text-center text-sm text-muted">
         No blueprint with room hotspots yet. An admin can upload a floorplan
@@ -49,7 +52,7 @@ export function BlueprintMap({
       <div className="relative w-full overflow-hidden rounded-md border border-edge bg-subtle">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src="/api/blueprint"
+          src={blueprintSrc(blueprintVersion)}
           alt="House blueprint"
           className="block w-full select-none"
           draggable={false}

@@ -31,6 +31,6 @@ export {
   updateRequestAsAdmin,
   deleteRequestAsAdmin,
 } from "./requests";
-export { getBlueprintRow, saveBlueprint } from "./blueprint";
+export { getBlueprintRow, getBlueprintVersion, saveBlueprint } from "./blueprint";
 export { planRowDecision, shouldNotifyRequester } from "./decision";
 export type { RowDecision } from "./decision";

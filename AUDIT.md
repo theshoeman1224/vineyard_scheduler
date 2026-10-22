@@ -10,15 +10,8 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
 ---
 
 
-## Database
-
-- **Blueprint served `no-store`.** Up to ~4MB of base64 is read and decoded
-  on every view; use a versioned URL with long-lived caching.
-
 ## Frontend
 
-- **Blueprint not refreshed after upload.** Same image URL, so the admin
-  editor keeps showing the old image.
 - **Polish.** Geist font loaded but overridden by `body { font-family: Arial }`;
   toggles lack `aria-pressed`; calendar state is color-only; `StatusPill`
   has no dark variants; no `error.tsx`.

@@ -6,6 +6,7 @@ import { MAX_BEDS, MAX_ROOM_NAME_LENGTH } from "@/lib/validation";
 import { bedsLabel } from "@/app/lib/roomText";
 import { apiGet, apiSend, apiSendForm } from "@/app/lib/apiClient";
 import { Notice } from "@/app/components/Notice";
+import { blueprintSrc } from "@/lib/blueprint";
 
 type Rect = { x: number; y: number; w: number; h: number };
 
@@ -25,10 +26,14 @@ function clampRect(r: Rect): Rect {
 
 export function RoomsAdmin({
   initialRooms,
+  initialBlueprintVersion,
 }: {
   readonly initialRooms: RoomInfo[];
+  readonly initialBlueprintVersion: string | null;
 }) {
   const [rooms, setRooms] = useState(initialRooms);
+  // Changes on upload, which changes the image URL and so shows the new image.
+  const [blueprintVersion, setBlueprintVersion] = useState(initialBlueprintVersion);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -173,11 +178,12 @@ export function RoomsAdmin({
     setError(null);
     const form = new FormData();
     form.set("file", file);
-    const res = await apiSendForm<unknown>("/api/admin/blueprint", form);
+    const res = await apiSendForm<{ version?: string }>("/api/admin/blueprint", form);
     if (!res.ok) {
       setError(res.error);
       return;
     }
+    if (res.data.version) setBlueprintVersion(res.data.version);
     setMessage("Blueprint uploaded.");
     formEl.reset();
   }
@@ -419,13 +425,21 @@ export function RoomsAdmin({
           }}
           onPointerUp={() => setDrawing(false)}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/api/blueprint"
-            alt="House blueprint"
-            className="pointer-events-none block w-full"
-            draggable={false}
-          />
+          {blueprintVersion === null ? (
+            <p className="p-6 text-center text-sm text-muted">
+              Upload a blueprint image above to draw room areas.
+            </p>
+          ) : (
+            // The image comes from a route handler, not a static asset, and
+            // is versioned and cached by that route (see lib/blueprint.ts).
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={blueprintSrc(blueprintVersion)}
+              alt="House blueprint"
+              className="pointer-events-none block w-full"
+              draggable={false}
+            />
+          )}
           {rooms
             .filter((r) => r.hotspotX != null && r.id !== hotspotRoomId)
             .map((room) => (

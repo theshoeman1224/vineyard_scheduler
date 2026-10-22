@@ -1,10 +1,10 @@
 import { RoomsAdmin } from "@/app/components/admin/RoomsAdmin";
-import { getRooms } from "@/lib/data";
+import { getBlueprintVersion, getRooms } from "@/lib/data";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminRoomsPage() {
-  const rooms = await getRooms();
+  const [rooms, blueprintVersion] = await Promise.all([getRooms(), getBlueprintVersion()]);
   return (
     <main>
       <h1 className="mb-1 text-2xl font-semibold">Rooms &amp; blueprint</h1>
@@ -12,7 +12,7 @@ export default async function AdminRoomsPage() {
         Upload the house floorplan, add rooms with bed counts, and draw a
         clickable area on the blueprint for each room.
       </p>
-      <RoomsAdmin initialRooms={rooms} />
+      <RoomsAdmin initialRooms={rooms} initialBlueprintVersion={blueprintVersion} />
     </main>
   );
 }

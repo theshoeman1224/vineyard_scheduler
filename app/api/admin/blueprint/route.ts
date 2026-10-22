@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin";
-import { getBlueprintRow, saveBlueprint } from "@/lib/data";
+import { getBlueprintVersion, saveBlueprint } from "@/lib/data";
 import { sniffImageMime } from "@/lib/images";
 
 const MAX_BYTES = 3 * 1024 * 1024; // 3MB
@@ -29,18 +29,15 @@ export async function POST(req: Request) {
   if (bytes.byteLength > MAX_BYTES) {
     return NextResponse.json({ error: "Image too large (max 3MB)" }, { status: 400 });
   }
-  await saveBlueprint(mimeType, bytes.toString("base64"));
-  return NextResponse.json({ ok: true });
+  const version = await saveBlueprint(mimeType, bytes.toString("base64"));
+  return NextResponse.json({ ok: true, version });
 }
 
 export async function GET() {
   const denied = await requireAdmin();
   if (denied) return denied;
-  const row = await getBlueprintRow();
-  return NextResponse.json({
-    hasBlueprint: !!row,
-    mimeType: row?.mimeType ?? null,
-  });
+  const version = await getBlueprintVersion();
+  return NextResponse.json({ hasBlueprint: version !== null, version });
 }
 
 export const runtime = "nodejs";

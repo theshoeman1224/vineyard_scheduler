@@ -1,5 +1,10 @@
 import { Scheduler } from "@/app/components/Scheduler";
-import { getAvailabilityRange, getRequestsCurrent, getRooms } from "@/lib/data";
+import {
+  getAvailabilityRange,
+  getBlueprintVersion,
+  getRequestsCurrent,
+  getRooms,
+} from "@/lib/data";
 import { availabilityWindow } from "@/lib/availability";
 import { toPublicRequest } from "@/app/lib/requestTypes";
 
@@ -8,10 +13,11 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   // The client refreshes and bounds its calendar with this same window.
   const dateWindow = availabilityWindow();
-  const [rooms, availability, requests] = await Promise.all([
+  const [rooms, availability, requests, blueprintVersion] = await Promise.all([
     getRooms(),
     getAvailabilityRange(dateWindow.start, dateWindow.end),
     getRequestsCurrent(dateWindow.start),
+    getBlueprintVersion(),
   ]);
 
   return (
@@ -21,6 +27,7 @@ export default async function Home() {
         initialAvailability={availability}
         initialRequests={requests.map((r) => toPublicRequest(r))}
         dateWindow={dateWindow}
+        blueprintVersion={blueprintVersion}
       />
     </main>
   );
