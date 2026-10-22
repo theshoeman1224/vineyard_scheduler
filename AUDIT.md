@@ -34,8 +34,6 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
 - **Unhandled constraint errors.** Duplicate room names and the
   `deleteRoom` check-then-delete race surface as raw 500s; public 500s echo
   the database error message.
-- **Inefficient reads.** `getRequestById` loads the whole table (twice per
-  admin PATCH); withdrawal runs ~7 queries.
 - **Blueprint served `no-store`.** Up to ~4MB of base64 is read and decoded
   on every view; use a versioned URL with long-lived caching.
 

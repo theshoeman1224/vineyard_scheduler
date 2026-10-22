@@ -56,8 +56,10 @@ export async function getRequestsCurrent(
 }
 
 export async function getRequestById(id: number): Promise<RequestWithDetails | null> {
-  const all = await getRequestsAll();
-  return all.find((r) => r.id === id) ?? null;
+  const db = getDb();
+  const rows = await baseRequestQuery(db).where(eq(requests.id, id));
+  const withDates = await attachDates(rows);
+  return withDates[0] ?? null;
 }
 
 export async function getGroupRequests(groupId: string): Promise<RequestWithDetails[]> {
@@ -68,25 +70,24 @@ export async function getGroupRequests(groupId: string): Promise<RequestWithDeta
   return attachDates(rows);
 }
 
-export async function getRequestByCancelToken(
-  token: string,
-): Promise<RequestWithDetails | null> {
-  const db = getDb();
-  const rows = await baseRequestQuery(db).where(eq(requests.cancelToken, token));
-  const withDates = await attachDates(rows);
-  return withDates[0] ?? null;
+// The group (all rooms of one submission) a cancel token belongs to.
+// Every row of a group shares the token, so this is a subquery rather
+// than an anchor lookup followed by a second query.
+function groupIdForToken(token: string) {
+  return getDb()
+    .select({ groupId: requests.groupId })
+    .from(requests)
+    .where(eq(requests.cancelToken, token));
 }
 
 // All rows of the group that a cancel token belongs to (the submission may
-// cover several rooms).
+// cover several rooms), with dates: two queries in total.
 export async function getGroupByCancelToken(
   token: string,
 ): Promise<RequestWithDetails[]> {
-  const anchor = await getRequestByCancelToken(token);
-  if (!anchor) return [];
   const db = getDb();
   const rows = await baseRequestQuery(db)
-    .where(eq(requests.groupId, anchor.groupId))
+    .where(inArray(requests.groupId, groupIdForToken(token)))
     .orderBy(asc(requests.id));
   return attachDates(rows);
 }
@@ -286,11 +287,13 @@ export async function deleteRequestAsAdmin(requestId: number): Promise<void> {
 }
 
 // User withdrew their request via their private link — removes the whole
-// submission group (all rooms requested together).
+// submission group (all rooms requested together) in one statement.
+// Returns false when nothing matched (already withdrawn or removed).
 export async function cancelByToken(token: string): Promise<boolean> {
   const db = getDb();
-  const anchor = await getRequestByCancelToken(token);
-  if (!anchor) return false;
-  await db.delete(requests).where(eq(requests.groupId, anchor.groupId));
-  return true;
+  const deleted = await db
+    .delete(requests)
+    .where(inArray(requests.groupId, groupIdForToken(token)))
+    .returning({ id: requests.id });
+  return deleted.length > 0;
 }

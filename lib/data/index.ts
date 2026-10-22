@@ -21,7 +21,6 @@ export {
   getRequestsCurrent,
   getRequestById,
   getGroupRequests,
-  getRequestByCancelToken,
   getGroupByCancelToken,
   cancelByToken,
   createRequest,
