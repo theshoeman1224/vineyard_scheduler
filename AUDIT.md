@@ -13,9 +13,6 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
 
 - **Bed reduction bypasses capacity.** Lowering a room's beds below its
   confirmed bookings is not checked; `free = max(0, …)` hides the overbooking.
-- **`localeCompare` on dates.** `RequestsTable.tsx` sorts dates with
-  `localeCompare`, which `lib/dates.ts` documents as unsafe; use
-  `compareDateStr`.
 - **`db/index.ts` pool comment is inaccurate.** It assumes the previous
   request has finished when its pool is retired; one isolate serves
   overlapping requests.
@@ -38,8 +35,7 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
   `deleteRoom` check-then-delete race surface as raw 500s; public 500s echo
   the database error message.
 - **Inefficient reads.** `getRequestById` loads the whole table (twice per
-  admin PATCH); withdrawal runs ~7 queries; the home page loads all request
-  history.
+  admin PATCH); withdrawal runs ~7 queries.
 - **Blueprint served `no-store`.** Up to ~4MB of base64 is read and decoded
   on every view; use a versioned URL with long-lived caching.
 
@@ -49,13 +45,10 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
   days; `refresh()` uses the API default of 120. Dates outside the loaded
   window show "full" in the list and "free" on the blueprint. The calendar
   has no end bound.
-- **Notes are public.** `RequestPublic` includes `note`, though the form
-  presents it as admin-facing.
 - **Shared-IP rate limit.** A household behind one router shares 5
   submissions / 15 min, and failed validations count against it.
 - **Blueprint not refreshed after upload.** Same image URL, so the admin
   editor keeps showing the old image.
-- **"Current requests" shows all history**, oldest first.
 - **Polish.** Geist font loaded but overridden by `body { font-family: Arial }`;
   toggles lack `aria-pressed`; calendar state is color-only; `StatusPill`
   has no dark variants; no `error.tsx`.

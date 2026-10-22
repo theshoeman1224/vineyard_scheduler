@@ -1,5 +1,5 @@
 import { Scheduler } from "@/app/components/Scheduler";
-import { getAvailabilityRange, getRequestsAll, getRooms } from "@/lib/data";
+import { getAvailabilityRange, getRequestsCurrent, getRooms } from "@/lib/data";
 import { addDaysStr, earliestBookableDate } from "@/lib/dates";
 import { toPublicRequest } from "@/app/lib/requestTypes";
 
@@ -11,7 +11,7 @@ export default async function Home() {
   const [rooms, availability, requests] = await Promise.all([
     getRooms(),
     getAvailabilityRange(start, end),
-    getRequestsAll(),
+    getRequestsCurrent(start),
   ]);
 
   return (

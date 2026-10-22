@@ -18,6 +18,7 @@ export { availabilityFromBookings, getAvailabilityRange } from "./availability";
 export type { DecideResult, GroupDecisionRoomResult } from "./requests";
 export {
   getRequestsAll,
+  getRequestsCurrent,
   getRequestById,
   getGroupRequests,
   getRequestByCancelToken,

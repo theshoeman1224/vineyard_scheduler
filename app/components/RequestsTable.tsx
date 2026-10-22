@@ -2,16 +2,19 @@
 
 import type { RequestPublic } from "@/app/lib/requestTypes";
 import { StatusPill } from "./StatusPill";
-import { formatDateHuman } from "@/lib/dates";
+import { compareDateStr, formatDateHuman } from "@/lib/dates";
 
 export function RequestsTable({
   requests,
 }: {
   readonly requests: RequestPublic[];
 }) {
+  // The server already sends only current pending/confirmed requests;
+  // the denied filter is a guard for stale client state. Sort by first
+  // night with compareDateStr (byte order), never localeCompare.
   const visible = requests.filter((r) => r.status !== "denied");
   const sorted = [...visible].sort((a, b) =>
-    (a.dates[0] ?? "").localeCompare(b.dates[0] ?? ""),
+    compareDateStr(a.dates[0] ?? "", b.dates[0] ?? ""),
   );
 
   return (

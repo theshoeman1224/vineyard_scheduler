@@ -17,23 +17,24 @@ export type RequestPublic = {
   dates: string[];
 };
 
-// Maps a full request row to the client shape. Emails are PII, so they are
-// stripped unless explicitly requested — only the admin page and the admin
-// API call this with `includeEmail` (guarded by the admin session).
+// Maps a full request row to the client shape. The email (PII) and the
+// note (written for the admin — the form says "Anything the admin should
+// know") are private: they are stripped unless `includePrivate` is set,
+// which only the admin page and the admin-session branch of the API do.
 // Used by both the home page and the admin page so the field list lives in
 // exactly one place.
 export function toPublicRequest(
   r: RequestWithDetails,
-  includeEmail = false,
+  includePrivate = false,
 ): RequestPublic {
   return {
     id: r.id,
     name: r.name,
-    email: includeEmail ? r.email : null,
+    email: includePrivate ? r.email : null,
     roomId: r.roomId,
     roomName: r.roomName,
     status: r.status,
-    note: r.note,
+    note: includePrivate ? r.note : null,
     dates: r.dates,
     createdAt: r.createdAt.toISOString(),
   };

@@ -1,4 +1,4 @@
-import { asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { requestDates, requests, rooms, type RequestStatus } from "@/db/schema";
 import { randomToken, randomUUID, type DecideAction } from "@/lib/tokens";
@@ -32,6 +32,26 @@ export async function getRequestsAll(): Promise<RequestWithDetails[]> {
   const rows = await baseRequestQuery(db).orderBy(
     sql`${requests.createdAt} DESC, ${requests.id} DESC`,
   );
+  return attachDates(rows);
+}
+
+// The public "current requests" list: pending or confirmed requests with at
+// least one night on or after `fromDate`. Denied and fully past requests
+// stay out of the public payload (and the home page's load) as history
+// grows; the admin panel still reads everything via getRequestsAll.
+export async function getRequestsCurrent(
+  fromDate: string,
+): Promise<RequestWithDetails[]> {
+  const db = getDb();
+  const rows = await baseRequestQuery(db)
+    .where(
+      and(
+        inArray(requests.status, ["pending", "confirmed"]),
+        sql`exists (select 1 from ${requestDates} rd
+                    where rd.request_id = ${requests.id} and rd.date >= ${fromDate})`,
+      ),
+    )
+    .orderBy(sql`${requests.createdAt} DESC, ${requests.id} DESC`);
   return attachDates(rows);
 }
 

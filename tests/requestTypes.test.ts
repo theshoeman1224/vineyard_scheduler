@@ -23,6 +23,11 @@ describe("toPublicRequest", () => {
     expect(toPublicRequest(row, true).email).toBe("josh@example.com");
   });
 
+  it("strips the note (written for the admin) unless explicitly included", () => {
+    expect(toPublicRequest(row).note).toBeNull();
+    expect(toPublicRequest(row, true).note).toBe("arriving late");
+  });
+
   it("maps the row to the public shape with an ISO createdAt", () => {
     expect(toPublicRequest(row, true)).toEqual({
       id: 7,

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createRequestSchema } from "@/lib/validation";
-import { createRequest, getRequestsAll, getRooms } from "@/lib/data";
-import { sortUniqueDates } from "@/lib/dates";
+import { createRequest, getRequestsAll, getRequestsCurrent, getRooms } from "@/lib/data";
+import { earliestBookableDate, sortUniqueDates } from "@/lib/dates";
 import { adminNewRequestEmail } from "@/lib/emails";
 import { trySendEmail } from "@/lib/mailer";
 import { adminEmail, adminEmailIsConfigured, appUrl, signingSecret } from "@/lib/env";
@@ -10,13 +10,16 @@ import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 import { isAdmin } from "@/lib/admin";
 import { toPublicRequest } from "@/app/lib/requestTypes";
 
+// Admins get the full history with private fields (email, note) for the
+// admin table; everyone else gets only current pending/confirmed requests
+// with name, room, status, and dates.
 export async function GET() {
-  const all = await getRequestsAll();
-  // Requester emails are PII — only signed-in admins receive them; the
-  // public table needs only name, room, status, and dates.
-  const includeEmail = await isAdmin();
+  const admin = await isAdmin();
+  const rows = admin
+    ? await getRequestsAll()
+    : await getRequestsCurrent(earliestBookableDate());
   return NextResponse.json({
-    requests: all.map((r) => toPublicRequest(r, includeEmail)),
+    requests: rows.map((r) => toPublicRequest(r, admin)),
   });
 }
 
