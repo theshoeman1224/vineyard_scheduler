@@ -16,7 +16,7 @@ export async function DELETE(
   }
   const result = await deleteRoom(roomId);
   if (!result.ok) {
-    return NextResponse.json({ error: result.error }, { status: 409 });
+    return NextResponse.json({ error: result.error }, { status: result.status });
   }
   return NextResponse.json({ ok: true });
 }

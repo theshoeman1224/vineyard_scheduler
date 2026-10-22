@@ -84,13 +84,13 @@ export async function PATCH(req: Request, ctx: Ctx) {
       note: edit.note,
     });
   } catch (e) {
-    return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Update failed" },
-      { status: 500 },
-    );
+    // Expected failures come back as results; anything thrown is
+    // unexpected. Log it for `wrangler tail`, never echo database text.
+    console.error(`[admin] update of request #${requestId} failed:`, e);
+    return NextResponse.json({ error: "Update failed — try again." }, { status: 500 });
   }
   if (!result.ok) {
-    return NextResponse.json({ error: result.error }, { status: 409 });
+    return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
   // Notify the requester if they provided an email. The DB update already

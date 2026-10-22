@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { createRequestSchema } from "@/lib/validation";
-import { createRequest, getRequestsAll, getRequestsCurrent, getRooms } from "@/lib/data";
+import {
+  createRequest,
+  getRequestsAll,
+  getRequestsCurrent,
+  getRooms,
+  PG_FOREIGN_KEY_VIOLATION,
+  pgErrorCode,
+} from "@/lib/data";
 import { earliestBookableDate, sortUniqueDates } from "@/lib/dates";
 import { adminNewRequestEmail } from "@/lib/emails";
 import { trySendEmail } from "@/lib/mailer";
@@ -83,8 +90,14 @@ export async function POST(req: Request) {
       note: input.note,
     });
   } catch (e) {
+    // A room deleted after the check above fails the foreign key.
+    if (pgErrorCode(e) === PG_FOREIGN_KEY_VIOLATION) {
+      return NextResponse.json({ error: "One or more rooms not found" }, { status: 400 });
+    }
+    // Public endpoint: log the details, never echo database errors back.
+    console.error("[requests] failed to save submission:", e);
     return NextResponse.json(
-      { error: e instanceof Error ? e.message : "Failed to save request" },
+      { error: "Could not save your request — please try again." },
       { status: 500 },
     );
   }

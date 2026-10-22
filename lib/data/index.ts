@@ -7,6 +7,7 @@
 // - shared.ts       request query building and date attachment
 // - capacity.ts     race-safe bed capacity checks
 // - decision.ts     pure rules for email-link approve/deny per row
+// - errors.ts       WriteResult + Postgres error-code helpers
 //
 // Keeps existing `@/lib/data` imports working unchanged.
 
@@ -15,7 +16,9 @@ export { toRoomInfo, getRooms, upsertRoom, deleteRoom } from "./rooms";
 export { roomWriteValues } from "./roomValues";
 export type { RoomUpsertInput } from "./roomValues";
 export { availabilityFromBookings, getAvailabilityRange } from "./availability";
-export type { DecideResult, GroupDecisionRoomResult } from "./requests";
+export type { GroupDecisionRoomResult } from "./requests";
+export type { WriteResult } from "./errors";
+export { PG_FOREIGN_KEY_VIOLATION, PG_UNIQUE_VIOLATION, pgErrorCode } from "./errors";
 export {
   getRequestsAll,
   getRequestsCurrent,

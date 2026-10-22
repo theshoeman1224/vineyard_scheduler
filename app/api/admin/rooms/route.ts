@@ -23,7 +23,10 @@ export async function POST(req: Request) {
     const message = parsed.error.issues.map((i) => i.message).join("; ");
     return NextResponse.json({ error: message }, { status: 400 });
   }
-  await upsertRoom(parsed.data);
+  const result = await upsertRoom(parsed.data);
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
+  }
   return NextResponse.json({ ok: true });
 }
 

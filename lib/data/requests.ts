@@ -4,6 +4,7 @@ import { requestDates, requests, rooms, type RequestStatus } from "@/db/schema";
 import { randomToken, randomUUID, type DecideAction } from "@/lib/tokens";
 import { sortUniqueDates } from "@/lib/dates";
 import { planGroupDecision, type GroupDecisionRoomResult } from "./decision";
+import type { WriteResult } from "./errors";
 import {
   baseRequestQuery,
   attachDates,
@@ -11,9 +12,6 @@ import {
 } from "./shared";
 import { capacityConflicts, confirmedCountsOutsideGroup, firstFullDate } from "./capacity";
 
-export type DecideResult =
-  | { ok: true }
-  | { ok: false; error: string };
 
 export type { GroupDecisionRoomResult } from "./decision";
 
@@ -201,31 +199,38 @@ export async function updateRequestAsAdmin(
     dates: string[];
     note: string | null;
   },
-): Promise<DecideResult> {
+): Promise<WriteResult> {
   const db = getDb();
-  return db.transaction(async (tx) => {
+  return db.transaction(async (tx): Promise<WriteResult> => {
     const existing = await tx
       .select({ id: requests.id })
       .from(requests)
       .where(eq(requests.id, requestId));
-    if (!existing[0]) return { ok: false as const, error: `Request #${requestId} not found` };
+    if (!existing[0]) {
+      return { ok: false, status: 404, error: `Request #${requestId} not found` };
+    }
 
-    // Lock the room row first to serialize concurrent capacity checks.
-    await tx.execute(sql`SELECT id FROM rooms WHERE id = ${edit.roomId} FOR UPDATE`);
+    // Lock the target room first (rooms before requests, the same order as
+    // decideGroup) to serialize concurrent capacity checks. A missing room
+    // is bad input, reported before the foreign key would reject it.
+    const roomRows = await tx
+      .select({ beds: rooms.beds })
+      .from(rooms)
+      .where(eq(rooms.id, edit.roomId))
+      .for("update");
+    if (!roomRows[0]) {
+      return { ok: false, status: 400, error: "That room no longer exists." };
+    }
+    const beds = roomRows[0].beds;
 
     if (edit.status === "confirmed") {
-      const roomRows = await tx
-        .select({ beds: rooms.beds })
-        .from(rooms)
-        .where(eq(rooms.id, edit.roomId));
-      const beds = roomRows[0]?.beds ?? 0;
-
       const conflicts = await capacityConflicts(tx, edit.roomId, requestId, edit.dates);
       const full = firstFullDate(edit.dates, conflicts, beds);
       if (full) {
         const used = conflicts.get(full) ?? 0;
         return {
-          ok: false as const,
+          ok: false,
+          status: 409,
           error: `No beds left in this room on ${full} (${used}/${beds} taken).`,
         };
       }
@@ -250,7 +255,7 @@ export async function updateRequestAsAdmin(
         .values(edit.dates.map((d) => ({ requestId, date: d })));
     }
 
-    return { ok: true as const };
+    return { ok: true };
   });
 }
 

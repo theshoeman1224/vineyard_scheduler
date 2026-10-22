@@ -26,9 +26,6 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
   Hyperdrive or Neon's serverless driver.
 - **Missing constraints.** No CHECKs for `beds >= 0`, hotspot ranges, or the
   `blueprint.id = 1` singleton; `request_dates` has no primary key.
-- **Unhandled constraint errors.** Duplicate room names and the
-  `deleteRoom` check-then-delete race surface as raw 500s; public 500s echo
-  the database error message.
 - **Blueprint served `no-store`.** Up to ~4MB of base64 is read and decoded
   on every view; use a versioned URL with long-lived caching.
 
