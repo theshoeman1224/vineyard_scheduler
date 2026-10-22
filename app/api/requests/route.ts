@@ -23,23 +23,13 @@ export async function GET() {
   });
 }
 
-// 5 submissions per 15 minutes per client IP — enough for a household
-// coordinating rooms, tight enough to blunt spam and Resend email abuse.
-const SUBMIT_LIMIT = 5;
+// 20 valid submissions per 15 minutes per client IP. The whole household
+// (~12 people) often shares one router and so one public IP; 20 leaves
+// room for everyone while still capping spam and Resend email abuse.
+const SUBMIT_LIMIT = 20;
 const SUBMIT_WINDOW_MS = 15 * 60 * 1000;
 
 export async function POST(req: Request) {
-  const limit = checkRateLimit(
-    `submit:${clientIp(req.headers)}`,
-    SUBMIT_LIMIT,
-    SUBMIT_WINDOW_MS,
-  );
-  if (!limit.ok) {
-    return NextResponse.json(
-      { error: "Too many requests from this address — try again later" },
-      { status: 429, headers: { "retry-after": String(limit.retryAfterSeconds) } },
-    );
-  }
   let body: unknown;
   try {
     body = await req.json();
@@ -53,6 +43,20 @@ export async function POST(req: Request) {
       .map((i) => i.message)
       .join("; ");
     return NextResponse.json({ error: message }, { status: 400 });
+  }
+
+  // Counted only after validation: a rejected submission writes nothing
+  // and sends no email, so typos must not use up the household's budget.
+  const limit = checkRateLimit(
+    `submit:${clientIp(req.headers)}`,
+    SUBMIT_LIMIT,
+    SUBMIT_WINDOW_MS,
+  );
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "Too many requests from this address — try again later" },
+      { status: 429, headers: { "retry-after": String(limit.retryAfterSeconds) } },
+    );
   }
 
   const input = parsed.data;

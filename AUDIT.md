@@ -36,8 +36,6 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
 
 ## Frontend
 
-- **Shared-IP rate limit.** A household behind one router shares 5
-  submissions / 15 min, and failed validations count against it.
 - **Blueprint not refreshed after upload.** Same image URL, so the admin
   editor keeps showing the old image.
 - **Polish.** Geist font loaded but overridden by `body { font-family: Arial }`;
