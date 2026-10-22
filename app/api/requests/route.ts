@@ -4,7 +4,7 @@ import { createRequest, getRequestsAll, getRooms } from "@/lib/data";
 import { sortUniqueDates } from "@/lib/dates";
 import { adminNewRequestEmail } from "@/lib/emails";
 import { trySendEmail } from "@/lib/mailer";
-import { adminEmail, appUrl, signingSecret } from "@/lib/env";
+import { adminEmail, adminEmailIsConfigured, appUrl, signingSecret } from "@/lib/env";
 import { signDecideToken } from "@/lib/tokens";
 import { checkRateLimit, clientIp } from "@/lib/rateLimit";
 import { isAdmin } from "@/lib/admin";
@@ -61,6 +61,11 @@ export async function POST(req: Request) {
 
   const dates = sortUniqueDates(input.dates);
 
+  // Read required config before writing: once the request is saved,
+  // nothing below may fail the response (a retry would duplicate it).
+  const secret = signingSecret();
+  const baseUrl = appUrl();
+
   let created: { groupId: string; ids: number[]; cancelToken: string };
   try {
     created = await createRequest({
@@ -77,26 +82,29 @@ export async function POST(req: Request) {
     );
   }
 
-  // Notify the admin — never fail the request because of email problems.
-  const msg = adminNewRequestEmail(
-    {
-      name: input.name,
-      email: input.email,
-      rooms: requested.map((r) => r.name),
-      dates,
-      note: input.note,
-    },
-    `${appUrl()}/api/decide/${signDecideToken(created.groupId, "approve", signingSecret())}`,
-    `${appUrl()}/api/decide/${signDecideToken(created.groupId, "deny", signingSecret())}`,
-  );
-  const emailRes = await trySendEmail(adminEmail(), msg);
-  const emailQueued = emailRes.ok;
+  // Notify the admin — never fail the request because of email problems,
+  // including an unset ADMIN_EMAIL (adminEmail() would throw).
+  let emailQueued = false;
+  if (adminEmailIsConfigured()) {
+    const msg = adminNewRequestEmail(
+      {
+        name: input.name,
+        email: input.email,
+        rooms: requested.map((r) => r.name),
+        dates,
+        note: input.note,
+      },
+      `${baseUrl}/api/decide/${signDecideToken(created.groupId, "approve", secret)}`,
+      `${baseUrl}/api/decide/${signDecideToken(created.groupId, "deny", secret)}`,
+    );
+    emailQueued = (await trySendEmail(adminEmail(), msg)).ok;
+  }
 
   return NextResponse.json({
     ok: true,
     id: created.ids[0],
     roomCount: created.ids.length,
-    cancelUrl: `${appUrl()}/api/cancel/${created.cancelToken}`,
+    cancelUrl: `${baseUrl}/api/cancel/${created.cancelToken}`,
     emailQueued,
   });
 }

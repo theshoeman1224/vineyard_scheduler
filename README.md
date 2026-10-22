@@ -79,7 +79,7 @@ admin panel.
 | `DATABASE_URL` | Postgres connection string |
 | `SIGNING_SECRET` | Long random string; signs email action links + admin cookie |
 | `ADMIN_PASSWORD` | Password for `/admin` |
-| `ADMIN_EMAIL` | Where request notifications are sent |
+| `ADMIN_EMAIL` | Where request notifications are sent (empty = admin emails skipped) |
 | `RESEND_API_KEY` | Resend API key (empty = emails disabled) |
 | `EMAIL_FROM` | Verified Resend sender, e.g. `House Scheduler <scheduler@yourdomain.com>` |
 | `APP_URL` | Public base URL used in email links |

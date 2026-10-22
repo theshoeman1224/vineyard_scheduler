@@ -28,10 +28,6 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
 
 ## Misalignments with AGENTS.md / README
 
-- **Email can fail a committed submission.** `POST /api/requests` calls
-  `adminEmail()` (throws when `ADMIN_EMAIL` is unset) after the request is
-  saved, returning a 500 for a stored request; retries create duplicates.
-  Violates the fire-and-forget email policy.
 - **Email has no shared length limit.** No `MAX_EMAIL_LENGTH` constant; the
   public schema has no limit, the admin schema hardcodes 120 without a shape
   check, and neither email input sets `maxLength`.
