@@ -81,8 +81,9 @@ export async function getGroupByCancelToken(
 }
 
 // Creates one request row per room, all sharing a group id and cancel
-// token so they can be decided or withdrawn together.
-export async function createRequest(
+// token so they can be decided or withdrawn together. Two statements in
+// one transaction: a multi-row insert of the requests, then of all dates.
+export function createRequest(
   input: {
     name: string;
     email: string | null;
@@ -95,28 +96,26 @@ export async function createRequest(
   return db.transaction(async (tx) => {
     const groupId = randomUUID();
     const cancelToken = randomToken();
-    const ids: number[] = [];
-    const dateRows: { requestId: number; date: string }[] = [];
-    for (const roomId of input.roomIds) {
-      const inserted = await tx
-        .insert(requests)
-        .values({
+    const inserted = await tx
+      .insert(requests)
+      .values(
+        input.roomIds.map((roomId) => ({
           name: input.name,
           email: input.email,
           roomId,
           note: input.note,
           cancelToken,
           groupId,
-          status: "pending",
-        })
-        .returning({ id: requests.id });
-      const id = inserted[0].id;
-      ids.push(id);
-      for (const d of input.dates) {
-        dateRows.push({ requestId: id, date: d });
-      }
-    }
-    await tx.insert(requestDates).values(dateRows);
+          status: "pending" as const,
+        })),
+      )
+      .returning({ id: requests.id });
+    // Every room gets the same dates, so nothing here depends on the order
+    // RETURNING lists the ids in.
+    const ids = inserted.map((r) => r.id);
+    await tx
+      .insert(requestDates)
+      .values(ids.flatMap((requestId) => input.dates.map((date) => ({ requestId, date }))));
     return { groupId, ids, cancelToken };
   });
 }
@@ -130,7 +129,7 @@ export async function createRequest(
 // With the locks held, dates and other groups' confirmed counts are read
 // in two queries, planGroupDecision decides every row, and the changes
 // are written as at most two batch updates.
-export async function decideGroup(
+export function decideGroup(
   groupId: string,
   action: DecideAction,
 ): Promise<GroupDecisionRoomResult[]> {
@@ -189,7 +188,7 @@ export async function decideGroup(
 
 // Admin edit: change name/email/room/dates/note/status. The whole update is
 // atomic; if the capacity check fails, nothing is changed.
-export async function updateRequestAsAdmin(
+export function updateRequestAsAdmin(
   requestId: number,
   edit: {
     name: string;

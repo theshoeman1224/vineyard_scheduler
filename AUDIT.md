@@ -33,6 +33,16 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
   config in your Cloudflare account and a `wrangler.jsonc` binding, so I
   did not set it up.
 
+## SonarCloud issues left open on purpose
+
+- **`typescript:S9379` — `autoFocus` on the admin password field
+  (`app/admin/login/page.tsx`).** The rule targets forms where focus jumps
+  past content a screen-reader user hasn't heard yet. The admin login page
+  has a heading, one sentence, and a single password field, so focusing
+  it is the expected behavior (as on most sign-in pages), and removing it
+  only adds a click for you. Mark it "Accepted" in SonarCloud if you
+  agree, or tell me to remove it.
+
 ## Decisions made while you were away
 
 - **Submit rate limit raised to 20 per 15 min per IP** (was 5), counted

@@ -3,14 +3,8 @@ import { verifyDecideToken } from "@/lib/tokens";
 import { signingSecret } from "@/lib/env";
 import { groupDecisionEmail } from "@/lib/emails";
 import { trySendEmail } from "@/lib/mailer";
-import {
-  COLOR_AMBER,
-  COLOR_GREEN,
-  COLOR_RED,
-  esc,
-  roomSummaryList,
-  tokenPage,
-} from "@/app/lib/tokenPage";
+import { COLOR_RED, esc, roomSummaryList, tokenPage } from "@/app/lib/tokenPage";
+import { decisionPage } from "@/app/lib/decisionPage";
 
 const INVALID_LINK_PAGE = () =>
   tokenPage(
@@ -31,15 +25,14 @@ export async function POST(req: Request, ctx: { params: Promise<{ token: string 
   if (group.length === 0) return NOT_FOUND_PAGE();
 
   const results = await decideGroup(payload.g, payload.a);
-  const succeeded = results.filter((r) => r.ok);
-  const failed = results.filter((r) => !r.ok);
+  const notified = shouldNotifyRequester(results);
 
   // Notify the requester with a per-room summary (they shared one email),
   // but only when this click changed something — re-clicking a link must
   // not re-send. The decision itself is already committed; a mailer
   // failure must not turn this page into an error.
   const email = group.find((r) => r.email)?.email;
-  if (email && shouldNotifyRequester(results)) {
+  if (email && notified) {
     await trySendEmail(
       email,
       groupDecisionEmail(
@@ -59,43 +52,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ token: string 
     );
   }
 
-  const verb = payload.a === "approve" ? "approved" : "denied";
-  let body = "";
-  if (succeeded.length > 0) {
-    const approvedRooms = succeeded.map((r) => esc(r.roomName)).join("<br/>");
-    const approvedHeading = `${succeeded.length} room${succeeded.length === 1 ? "" : "s"} ${verb}`;
-    body += `<p style="color:${COLOR_GREEN}"><strong>${approvedHeading}:</strong></p>
-      <p>${approvedRooms}</p>`;
-  }
-  if (failed.length > 0) {
-    const failedList = failed
-      .map((f) => `<strong>${esc(f.roomName)}</strong> &mdash; ${esc(f.error ?? "")}`)
-      .join("<br/>");
-    body += `<p style="color:${COLOR_RED}"><strong>Could not be ${verb}:</strong></p>
-      <p>${failedList}</p>
-      <p>Those rooms were left as they were; manage them in the admin panel.</p>`;
-  }
-  body += shouldNotifyRequester(results)
-    ? `<p style="color:#666;font-size:13px;">The requester has been notified (if they left an email).</p>`
-    : `<p style="color:#666;font-size:13px;">Nothing changed, so no email was sent.</p>`;
-
-  let title: string;
-  if (failed.length === 0) {
-    title = `Request ${verb}`;
-  } else if (succeeded.length > 0) {
-    title = `Partly ${verb}`;
-  } else {
-    title = "Could not apply decision";
-  }
-  let headingColor: string;
-  if (failed.length > 0) {
-    headingColor = COLOR_AMBER;
-  } else if (payload.a === "approve") {
-    headingColor = COLOR_GREEN;
-  } else {
-    headingColor = COLOR_RED;
-  }
-  return tokenPage(title, body, headingColor);
+  const page = decisionPage(payload.a, results, notified);
+  return tokenPage(page.title, page.body, page.headingColor);
 }
 
 export async function GET(_req: Request, ctx: { params: Promise<{ token: string }> }) {

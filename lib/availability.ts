@@ -138,6 +138,18 @@ const STATUS_RANK: Record<RoomDateStatus, number> = {
   full: 4,
 };
 
+// Scores one day from its bed counts (one room's slot, or the sum over
+// the selected rooms), with the calendar's priority: full >
+// limited-requested > limited > requested > free. Shared so the calendar,
+// the list, and the blueprint cannot disagree about a day.
+function countsStatus(c: { free: number; confirmed: number; pending: number }): DayStatus | "free" {
+  if (c.free === 0) return "full";
+  if (c.confirmed > 0 && c.pending > 0) return "limited-requested";
+  if (c.confirmed > 0) return "limited";
+  if (c.pending > 0) return "requested";
+  return "free";
+}
+
 // Marker state for ONE room across the selected dates, using the same
 // priority as the calendar (full > limited-requested > limited >
 // requested):
@@ -169,10 +181,8 @@ export function roomDateStatus(
   }
   if (bookable === 0) return "full";
   if (bookable < dates.length) return "partial";
-  if (confirmed && pending) return "limited-requested";
-  if (confirmed) return "limited";
-  if (pending) return "requested";
-  return "free";
+  // Every date has a free bed, so only the booking flags decide.
+  return countsStatus({ free: 1, confirmed: confirmed ? 1 : 0, pending: pending ? 1 : 0 });
 }
 
 // The room state as the CALENDAR renders it for the selected dates:
@@ -191,16 +201,7 @@ export function roomCalendarStatus(
   for (const date of dates) {
     const slot = avail[date]?.[roomId];
     if (!slot) continue;
-    const day: RoomDateStatus =
-      slot.free === 0
-        ? "full"
-        : slot.confirmed > 0 && slot.pending > 0
-          ? "limited-requested"
-          : slot.confirmed > 0
-            ? "limited"
-            : slot.pending > 0
-              ? "requested"
-              : "free";
+    const day = countsStatus(slot);
     if (STATUS_RANK[day] > STATUS_RANK[worst]) worst = day;
   }
   return worst;
@@ -246,10 +247,8 @@ export function dayStatuses(
       free += slot.free;
     }
     if (!hasSlots) continue;
-    if (free === 0) map.set(date, "full");
-    else if (confirmed > 0 && pending > 0) map.set(date, "limited-requested");
-    else if (confirmed > 0) map.set(date, "limited");
-    else if (pending > 0) map.set(date, "requested");
+    const status = countsStatus({ free, confirmed, pending });
+    if (status !== "free") map.set(date, status);
   }
 
   return map;

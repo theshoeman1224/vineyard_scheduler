@@ -37,7 +37,7 @@ const SECURITY_HEADERS = [
 ];
 
 const nextConfig: NextConfig = {
-  async headers() {
+  headers() {
     return [
       {
         source: "/:path*",

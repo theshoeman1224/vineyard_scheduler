@@ -19,7 +19,7 @@ cd "$ROOT"
 PORT=3100
 FRESH=0
 NO_ADMIN=0
-while [ $# -gt 0 ]; do
+while [[ $# -gt 0 ]]; do
   case "$1" in
     --fresh) FRESH=1 ;;
     --no-admin-email) NO_ADMIN=1 ;;
@@ -29,14 +29,14 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-[ -f .env ] || { echo ".env missing — copy .env.example and fill it in" >&2; exit 1; }
+[[ -f .env ]] || { echo ".env missing — copy .env.example and fill it in" >&2; exit 1; }
 
 # Tools run from the project's own install, never via npx: npx silently
 # downloads and runs any package missing locally, lifecycle scripts
 # included (Sonar shell:S6505). A missing binary should fail loudly.
 BIN="$ROOT/node_modules/.bin"
 for tool in drizzle-kit next tsx; do
-  [ -x "$BIN/$tool" ] || { echo "$BIN/$tool missing — run: npm ci --ignore-scripts" >&2; exit 1; }
+  [[ -x "$BIN/$tool" ]] || { echo "$BIN/$tool missing — run: npm ci --ignore-scripts" >&2; exit 1; }
 done
 
 CONTAINER=house-sched-pg
@@ -58,11 +58,15 @@ for _ in $(seq 1 30); do
   sleep 1
 done
 
-sql() { docker exec "$CONTAINER" psql -U postgres -tAc "$1"; }
-if [ "$FRESH" = 1 ]; then
+sql() {
+  local query="$1"
+  docker exec "$CONTAINER" psql -U postgres -tAc "$query"
+  return $?
+}
+if [[ "$FRESH" = 1 ]]; then
   sql "DROP DATABASE IF EXISTS $TEST_DB WITH (FORCE)" >/dev/null
 fi
-if [ -z "$(sql "SELECT 1 FROM pg_database WHERE datname='$TEST_DB'")" ]; then
+if [[ -z "$(sql "SELECT 1 FROM pg_database WHERE datname='$TEST_DB'")" ]]; then
   sql "CREATE DATABASE $TEST_DB" >/dev/null
 fi
 # Same schema path as production: committed migrations, never push. A
@@ -70,7 +74,7 @@ fi
 # three steps are idempotent (seed skips rooms that already exist).
 legacy=$(docker exec "$CONTAINER" psql -U postgres -d "$TEST_DB" -tAc \
   "SELECT to_regclass('public.rooms') IS NOT NULL AND to_regclass('drizzle.__drizzle_migrations') IS NULL")
-if [ "$legacy" = t ]; then
+if [[ "$legacy" = t ]]; then
   DATABASE_URL="$TEST_URL" npm run --silent db:baseline
 fi
 DATABASE_URL="$TEST_URL" "$BIN/drizzle-kit" migrate >/dev/null
@@ -81,12 +85,12 @@ DATABASE_URL="$TEST_URL" npm run --silent seed
 # killing only the listener can leave the parent holding the port, so kill
 # the listener plus its `next` ancestors, then confirm with ss.
 pid=$(ss -ltnpH "sport = :$PORT" | sed -n 's/.*pid=\([0-9]*\).*/\1/p' | head -1)
-if [ -n "$pid" ]; then
+if [[ -n "$pid" ]]; then
   chain="$pid"
   p="$pid"
   for _ in 1 2 3; do
     p=$(ps -o ppid= -p "$p" | tr -d ' ')
-    if [ -n "$p" ] && ps -o args= -p "$p" | grep -q next; then chain="$chain $p"; else break; fi
+    if [[ -n "$p" ]] && ps -o args= -p "$p" | grep -q next; then chain="$chain $p"; else break; fi
   done
   kill $chain 2>/dev/null || true
   for _ in $(seq 1 20); do
@@ -101,7 +105,7 @@ fi
 
 extra=()
 note=""
-if [ "$NO_ADMIN" = 1 ]; then
+if [[ "$NO_ADMIN" = 1 ]]; then
   extra+=(ADMIN_EMAIL=)
   note=", ADMIN_EMAIL empty"
 fi

@@ -21,26 +21,56 @@ NIGHT=$(date -d '+30 days' +%F)
 JAR=$(mktemp)
 FAILS=0
 
-q() { docker exec house-sched-pg psql -U postgres -d house_test -tAc "$1"; }
+# Helpers copy positional parameters into named locals and end with an
+# explicit return, so each one reads (and fails) predictably.
+q() {
+  local sql="$1"
+  docker exec house-sched-pg psql -U postgres -d house_test -tAc "$sql"
+  return $?
+}
 # A fresh fake client IP per call keeps the per-IP rate limits out of the way.
-ip() { echo "10.$((RANDOM % 250)).$((RANDOM % 250)).$((RANDOM % 250))"; }
+ip() {
+  echo "10.$((RANDOM % 250)).$((RANDOM % 250)).$((RANDOM % 250))"
+  return 0
+}
 post() {
-  curl -s -X POST "$B$1" -H 'content-type: application/json' \
-    -H "x-forwarded-for: $(ip)" -b "$JAR" -c "$JAR" -d "$2"
+  local path="$1" body="$2"
+  curl -s -X POST "$B$path" -H 'content-type: application/json' \
+    -H "x-forwarded-for: $(ip)" -b "$JAR" -c "$JAR" -d "$body"
+  return $?
 }
 # Project-local tsx, not npx (which can fetch and run unvetted packages).
-decide() { curl -s -X POST "$B/api/decide/$("$ROOT/node_modules/.bin/tsx" "$DIR/sign.ts" "$1" "$2")"; }
-has() { grep -q "$1" && echo yes || echo no; }
+decide() {
+  local group_id="$1" action="$2" token
+  token=$("$ROOT/node_modules/.bin/tsx" "$DIR/sign.ts" "$group_id" "$action")
+  curl -s -X POST "$B/api/decide/$token"
+  return $?
+}
+has() {
+  local pattern="$1"
+  if grep -q "$pattern"; then echo yes; else echo no; fi
+  return 0
+}
 check() {
-  if [ "$2" = "$3" ]; then
-    echo "PASS  $1"
+  local name="$1" got="$2" want="$3"
+  if [[ "$got" = "$want" ]]; then
+    echo "PASS  $name"
   else
-    echo "FAIL  $1 (expected '$3', got '$2')"
+    echo "FAIL  $name (expected '$want', got '$got')"
     FAILS=$((FAILS + 1))
   fi
+  return 0
 }
-group() { q "select group_id from requests where name='$1' limit 1"; }
-statuses() { q "select string_agg(status::text, ',' order by id) from requests where name like '$1'"; }
+group() {
+  local name="$1"
+  q "select group_id from requests where name='$name' limit 1"
+  return $?
+}
+statuses() {
+  local pattern="$1"
+  q "select string_agg(status::text, ',' order by id) from requests where name like '$pattern'"
+  return $?
+}
 
 curl -sf "$B/api/availability?start=$NIGHT&end=$NIGHT" >/dev/null ||
   { echo "server not reachable at $B — start serve.sh first" >&2; exit 1; }
@@ -89,5 +119,5 @@ q "delete from requests where name like '% $RUN'" >/dev/null
 q "delete from rooms where name like 'Smoke % $RUN'" >/dev/null
 rm -f "$JAR"
 
-if [ "$FAILS" -eq 0 ]; then echo "All checks passed."; else echo "$FAILS check(s) failed."; fi
-[ "$FAILS" -eq 0 ]
+if [[ "$FAILS" -eq 0 ]]; then echo "All checks passed."; else echo "$FAILS check(s) failed."; fi
+[[ "$FAILS" -eq 0 ]]
