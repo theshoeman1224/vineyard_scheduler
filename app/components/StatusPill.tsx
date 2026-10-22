@@ -4,8 +4,8 @@
 // requests table. Unknown statuses fall back to the neutral style.
 
 const STATUS_STYLES: Record<string, string> = {
-  confirmed: "bg-green-100 text-green-800",
-  pending: "bg-amber-100 text-amber-800",
+  confirmed: "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200",
+  pending: "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200",
   denied: "bg-edge text-muted",
 };
 

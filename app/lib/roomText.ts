@@ -1,7 +1,7 @@
 // Shared room text used by room pickers, tables, selects, and blueprint
 // titles. Keeps the "1 bed" / "2 beds" pluralization in one place.
 
-import type { RoomDateStatus } from "@/lib/availability";
+import type { DayStatus, RoomDateStatus } from "@/lib/availability";
 
 // "1 bed" / "2 beds".
 export function bedsLabel(beds: number): string {
@@ -75,4 +75,17 @@ export function hotspotClass(status: RoomDateStatus): string {
   if (status === "requested" || status === "partial") return "bg-amber-400/50";
   if (status === "full") return "bg-red-600/50";
   return "bg-neutral-800/40"; // idle
+}
+
+// Words for a calendar day's status, appended to the day's screen-reader
+// label so the state is not conveyed by color alone. Mirrors the legend.
+const DAY_STATUS_TEXT: Record<DayStatus, string> = {
+  limited: "partly booked",
+  "limited-requested": "partly booked, request pending",
+  requested: "request pending",
+  full: "full",
+};
+
+export function dayStatusText(status: DayStatus | undefined): string | null {
+  return status ? DAY_STATUS_TEXT[status] : null;
 }

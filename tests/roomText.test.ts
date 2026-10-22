@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   availabilityDotClass,
+  dayStatusText,
   detailsHint,
   hotspotClass,
 } from "@/app/lib/roomText";
@@ -60,5 +61,18 @@ describe("hotspotClass", () => {
 
   it("keeps the muted neutral for idle", () => {
     expect(hotspotClass("idle")).toBe("bg-neutral-800/40");
+  });
+});
+
+describe("dayStatusText", () => {
+  it("names every calendar status so it is not conveyed by color alone", () => {
+    expect(dayStatusText("full")).toBe("full");
+    expect(dayStatusText("limited")).toBe("partly booked");
+    expect(dayStatusText("limited-requested")).toBe("partly booked, request pending");
+    expect(dayStatusText("requested")).toBe("request pending");
+  });
+
+  it("adds nothing for a day without bookings", () => {
+    expect(dayStatusText(undefined)).toBeNull();
   });
 });

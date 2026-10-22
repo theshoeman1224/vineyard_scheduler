@@ -10,12 +10,6 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
 ---
 
 
-## Frontend
-
-- **Polish.** Geist font loaded but overridden by `body { font-family: Arial }`;
-  toggles lack `aria-pressed`; calendar state is color-only; `StatusPill`
-  has no dark variants; no `error.tsx`.
-
 ## Open questions for the owner
 
 - **Who applies migrations to production, and should CI do it?** The repo
@@ -49,6 +43,10 @@ removed in the same commit as the fix; `git log -- AUDIT.md` is the history.
   see everything.
 - **Lowering a room's beds below its confirmed bookings is refused** (409
   naming the first overbooked night) rather than allowed with a warning.
+- **Kept the Arial look and removed the Geist web font.** Geist was
+  downloaded on every visit but never shown (body text overrode it).
+  Switching to Geist would change how the whole site looks, so I kept what
+  you see today.
 - **Availability is one 400-day window** shared by the page, the refresh,
   the API default, the calendar's last selectable day, and request
   validation.

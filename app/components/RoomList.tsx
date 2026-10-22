@@ -53,6 +53,7 @@ export function RoomList({
             <li key={room.id}>
               <button
                 type="button"
+                aria-pressed={isSelected}
                 onClick={() => onSelect(room.id)}
                 className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm transition-colors ${
                   isSelected

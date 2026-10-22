@@ -305,6 +305,7 @@ export function RoomsAdmin({
                       </button>
                       <button
                         type="button"
+                        aria-pressed={hotspotRoomId === room.id}
                         onClick={() => {
                           setHotspotRoomId(room.id);
                           setDrawn(null);

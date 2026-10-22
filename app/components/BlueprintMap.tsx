@@ -67,6 +67,7 @@ export function BlueprintMap({
             <button
               key={room.id}
               type="button"
+              aria-pressed={selected}
               title={`${room.name} — ${bedsLabel(room.beds)}`}
               onClick={() => onSelect(room.id)}
               style={{

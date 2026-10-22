@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { DayPicker } from "react-day-picker";
+import { DayPicker, labelDayButton } from "react-day-picker";
 import "react-day-picker/style.css";
 import {
   dayStatuses,
@@ -9,6 +9,7 @@ import {
   type RoomInfo,
 } from "@/lib/availability";
 import { parseDate, toDateString } from "@/lib/dates";
+import { dayStatusText } from "@/app/lib/roomText";
 
 export function CalendarCard({
   availability,
@@ -102,6 +103,15 @@ export function CalendarCard({
           limited: "rdp-day_limited",
           full: "rdp-day_full",
           requested: "rdp-day_requested",
+        }}
+        labels={{
+          // The library's label ("Today, Monday, …, selected") plus the
+          // day's booking state, which is otherwise shown only as color.
+          labelDayButton: (date, dayModifiers) => {
+            const base = labelDayButton(date, dayModifiers);
+            const status = dayStatusText(statusByDate.get(toDateString(date)));
+            return status ? `${base}, ${status}` : base;
+          },
         }}
         showOutsideDays
         weekStartsOn={0}

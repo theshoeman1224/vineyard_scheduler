@@ -127,6 +127,7 @@ export function Scheduler({
             <div className="flex overflow-hidden rounded-md border border-edge text-xs">
               <button
                 type="button"
+                aria-pressed={mode === "list"}
                 onClick={() => setMode("list")}
                 className={`px-3 py-1 ${mode === "list" ? "bg-invert text-invert-fg" : "bg-card"}`}
               >
@@ -134,6 +135,7 @@ export function Scheduler({
               </button>
               <button
                 type="button"
+                aria-pressed={mode === "map"}
                 onClick={() => setMode("map")}
                 className={`px-3 py-1 ${mode === "map" ? "bg-invert text-invert-fg" : "bg-card"}`}
               >
